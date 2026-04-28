@@ -1,6 +1,5 @@
 const BikeStop = require("../models/BikeStop");
 
-// AGGIUNGE UN NUOVO BIKESTOP
 exports.createStop = async (req, res) => {
   try {
     const { name, description, category, longitude, latitude, services } = req.body;
@@ -11,10 +10,10 @@ exports.createStop = async (req, res) => {
       category,
       location: {
         type: "Point",
-        coordinates: [longitude, latitude], // Longitudine prima!
+        coordinates: [longitude, latitude],
       },
       services,
-      author: req.user.id, // Lo prenderemo dal token JWT
+      author: req.user.id,
     });
 
     const savedStop = await newStop.save();
