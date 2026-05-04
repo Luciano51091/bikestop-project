@@ -1,22 +1,20 @@
 const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
-module.exports = function (req, res, next) {
-  // 1. Leggiamo il token dall'header della richiesta
+module.exports = async function (req, res, next) {
   const token = req.header("x-auth-token");
 
-  // 2. Controlliamo se il token non esiste
   if (!token) {
     return res.status(401).json({ msg: "Nessun token, autorizzazione negata" });
   }
 
-  // 3. Verifichiamo il token
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Aggiungiamo l'utente (decodificato dal token) alla richiesta
-    req.user = decoded.user;
+    const user = await User.findById(decoded.user.id).select("-password");
+    if (!user) return res.status(401).json({ msg: "Utente non trovato" });
 
-    // Passiamo al prossimo passaggio (il controller)
+    req.user = user;
     next();
   } catch (err) {
     res.status(401).json({ msg: "Token non valido" });

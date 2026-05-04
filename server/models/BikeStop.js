@@ -5,7 +5,7 @@ const bikeStopSchema = new mongoose.Schema({
   description: String,
   category: {
     type: String,
-    enum: ["officine", "fontanelle", "ricarica-ebike", "hotel", "bar"],
+    enum: ["officina", "fontanella", "ricarica-ebike", "hotel", "bar", "pericolo"],
     required: true,
   },
 
@@ -23,6 +23,27 @@ const bikeStopSchema = new mongoose.Schema({
   services: [String],
   author: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   createdAt: { type: Date, default: Date.now },
+
+  status: {
+    type: String,
+    enum: ["active", "broken"],
+    default: "active",
+  },
+  hazardType: {
+    type: String,
+    enum: ["buca", "vetri", "lavori", "strada-chiusa", "altro"],
+    default: null,
+  },
+  lastVerified: { type: Date, default: Date.now },
+
+  comments: [
+    {
+      user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      userName: String,
+      text: { type: String, required: true },
+      date: { type: Date, default: Date.now },
+    },
+  ],
 });
 
 bikeStopSchema.index({ location: "2dsphere" });
