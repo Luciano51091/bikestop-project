@@ -35,7 +35,7 @@ const bikeStopSchema = new mongoose.Schema({
     default: null,
   },
   lastVerified: { type: Date, default: Date.now },
-
+  imageUrl: { type: String, default: "" },
   comments: [
     {
       user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

@@ -2,7 +2,7 @@ const BikeStop = require("../models/BikeStop");
 
 exports.createStop = async (req, res) => {
   try {
-    const { name, description, category, longitude, latitude, services, hazardType } = req.body;
+    const { name, description, category, longitude, latitude, services, hazardType, imageUrl } = req.body;
 
     if (!name || !longitude || !latitude || !category) {
       return res.status(400).json({ msg: "Nome, posizione e categoria sono obbligatori" });
@@ -20,6 +20,7 @@ exports.createStop = async (req, res) => {
       hazardType: hazardType || null,
       status: "active",
       author: req.user.id,
+      imageUrl: imageUrl || "",
     });
 
     const savedStop = await newStop.save();
@@ -40,26 +41,31 @@ exports.getAllStops = async (req, res) => {
   }
 };
 
-// AGGIORNA STATO (Attivo/Guasto)
+// AGGIORNA STATO (Attivo/Guasto o Tipo Pericolo)
 exports.updateStatus = async (req, res) => {
   try {
     const { status, hazardType } = req.body;
-    const updateData = { lastVerified: Date.now() };
 
-    if (status !== undefined) updateData.status = status;
-    if (hazardType !== undefined) {
-      updateData.hazardType = hazardType;
-
-      updateData.name = `Pericolo: ${hazardType}`;
-    }
-
-    const stop = await BikeStop.findByIdAndUpdate(req.params.id, updateData, { returnDocument: "after" });
-
-    if (!stop) {
+    const stopToUpdate = await BikeStop.findById(req.params.id);
+    if (!stopToUpdate) {
       return res.status(404).json({ msg: "BikeStop non trovato" });
     }
 
-    res.json(stop);
+    const updateData = { lastVerified: Date.now() };
+
+    if (status !== undefined) updateData.status = status;
+
+    if (hazardType !== undefined) {
+      updateData.hazardType = hazardType;
+
+      if (stopToUpdate.category === "pericolo" && hazardType !== null) {
+        updateData.name = `Pericolo: ${hazardType}`;
+      }
+    }
+
+    const updatedStop = await BikeStop.findByIdAndUpdate(req.params.id, updateData, { returnDocument: "after" });
+
+    res.json(updatedStop);
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Errore nell'aggiornamento dello stato");
