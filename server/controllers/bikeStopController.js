@@ -111,3 +111,17 @@ exports.addComment = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// Cerca la funzione exports.rating e sostituiscila con questa:
+exports.rating = async (req, res) => {
+  try {
+    const stop = await BikeStop.findByIdAndUpdate(req.params.id, { $inc: { verifications: 1 }, lastVerified: Date.now() }, { returnDocument: "after" });
+
+    if (!stop) return res.status(404).json({ msg: "Punto non trovato" });
+
+    res.json(stop);
+  } catch (err) {
+    console.error("ERRORE RATING:", err.message);
+    res.status(500).send("Errore nell'aggiornamento della verifica");
+  }
+};

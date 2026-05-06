@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
-// Aggiunto Offcanvas e Badge alle importazioni
 import { Spinner, Modal, Button, Form, Image, Offcanvas, Badge } from "react-bootstrap";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from "react-leaflet";
 import axios from "axios";
-import { MapPin, Droplets, Wrench, Zap, AlertTriangle, Camera, MessageSquare, Navigation } from "lucide-react";
+import { MapPin, Droplets, Wrench, Zap, AlertTriangle, Camera, MessageSquare, Navigation, X } from "lucide-react";
 import { useNavigate } from "react-router";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -13,7 +12,6 @@ import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
 const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dbql5hkcb/image/upload";
 const UPLOAD_PRESET = "bikestop_preset";
 
-// --- CONTROLLER MAPPA ---
 const MapController = ({ stops, userLocation }) => {
   const map = useMap();
   useEffect(() => {
@@ -37,7 +35,6 @@ const MapPage = () => {
   const [newCoords, setNewCoords] = useState({ lat: null, lng: null });
   const [userLocation, setUserLocation] = useState(null);
 
-  // --- NUOVI STATI PER DETTAGLI ---
   const [showDetails, setShowDetails] = useState(false);
   const [selectedStop, setSelectedStop] = useState(null);
 
@@ -53,7 +50,6 @@ const MapPage = () => {
     try {
       const res = await axios.get("http://localhost:5000/api/bikestops");
       setStops(res.data);
-      // Se l'offcanvas è aperto, aggiorna i dati del punto selezionato (per vedere i nuovi commenti)
       if (selectedStop) {
         const updated = res.data.find((s) => s._id === selectedStop._id);
         setSelectedStop(updated);
@@ -161,7 +157,7 @@ const MapPage = () => {
       const token = localStorage.getItem("token");
       await axios.post(`http://localhost:5000/api/bikestops/${stopId}/comment`, { text: commentText }, { headers: { "x-auth-token": token } });
       setCommentText("");
-      fetchStops(); // Aggiorna la lista (e quindi lo selectedStop)
+      fetchStops();
     } catch (err) {
       alert("Errore");
     }
@@ -197,17 +193,62 @@ const MapPage = () => {
     }
   };
 
+  const handleOpenDetails = (stop) => {
+    setDestination(null);
+    setSelectedStop(stop);
+    setShowDetails(true);
+  };
+
   const handleCalculateRoute = (coords) => {
-    if (userLocation) {
-      setDestination([coords[1], coords[0]]);
+    const startRouting = (lat, lng) => {
+      setDestination(null);
+      setTimeout(() => {
+        setDestination([coords[1], coords[0]]);
+      }, 100);
       setShowDetails(false);
-    } else alert("Attiva GPS!");
+    };
+
+    if (userLocation) {
+      startRouting(userLocation.lat, userLocation.lng);
+    } else {
+      if (!navigator.geolocation) return alert("GPS non supportato dal tuo browser");
+
+      console.log("Acquisizione posizione in corso per calcolo percorso...");
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const newLat = pos.coords.latitude;
+          const newLng = pos.coords.longitude;
+
+          setUserLocation({ lat: newLat, lng: newLng });
+          startRouting(newLat, newLng);
+        },
+        (err) => {
+          alert("Per calcolare il percorso è necessario autorizzare l'accesso al GPS.");
+          console.error(err);
+        },
+        { timeout: 10000, enableHighAccuracy: true },
+      );
+    }
   };
 
   const handleOpenGoogleMaps = (coords) => {
     const [lng, lat] = coords;
     const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=bicycling`;
     window.open(url, "_blank");
+  };
+
+  const handleVerify = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.patch(`http://localhost:5000/api/bikestops/${id}/verify`, {}, { headers: { "x-auth-token": token } });
+
+      setSelectedStop(res.data);
+
+      fetchStops();
+    } catch (err) {
+      alert("Errore durante la verifica");
+    }
   };
 
   if (loading)
@@ -219,12 +260,27 @@ const MapPage = () => {
 
   return (
     <div style={{ position: "relative", height: "calc(100vh - 70px)", width: "100%", overflow: "hidden" }}>
+      {/* TASTO CANCELLA PERCORSO (Appare solo se c'è un percorso) */}
+      {destination && (
+        <Button
+          variant="danger"
+          size="sm"
+          className="position-absolute shadow-lg d-flex align-items-center gap-1"
+          style={{ top: "20px", left: "20px", zIndex: 1000, borderRadius: "20px", padding: "8px 15px" }}
+          onClick={() => setDestination(null)}
+        >
+          <X size={16} /> Cancella Percorso
+        </Button>
+      )}
+
       <MapContainer center={[41.9028, 12.4964]} zoom={12} style={{ height: "100%", width: "100%" }}>
         <TileLayer url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png" />
         <MapEvents />
         <MapController stops={filteredStops} userLocation={userLocation} />
 
-        {userLocation && destination && <RoutingControl key={`${userLocation.lat}-${destination[0]}`} userLocation={userLocation} destination={destination} />}
+        {userLocation && destination && (
+          <RoutingControl key={`route-${destination[0]}-${destination[1]}`} userLocation={userLocation} destination={destination} />
+        )}
 
         {userLocation && (
           <Marker
@@ -244,15 +300,7 @@ const MapPage = () => {
               <div className="text-center">
                 <h6>{stop.name}</h6>
                 {stop.imageUrl && <Image src={stop.imageUrl} fluid rounded className="mb-2" style={{ maxHeight: "50px" }} />}
-                <Button
-                  size="sm"
-                  variant="primary"
-                  className="w-100 rounded-pill"
-                  onClick={() => {
-                    setSelectedStop(stop);
-                    setShowDetails(true);
-                  }}
-                >
+                <Button size="sm" variant="primary" className="w-100 rounded-pill" onClick={() => handleOpenDetails(stop)}>
                   Vedi Dettagli
                 </Button>
               </div>
@@ -261,7 +309,6 @@ const MapPage = () => {
         ))}
       </MapContainer>
 
-      {/* PULSANTE MIA POSIZIONE */}
       <Button
         className="position-absolute shadow-lg rounded-circle border-0 p-3"
         style={{ bottom: "100px", right: "20px", zIndex: 1000, backgroundColor: "white" }}
@@ -270,7 +317,6 @@ const MapPage = () => {
         <MapPin className="text-primary" />
       </Button>
 
-      {/* BARRA LATERALE DETTAGLI (OFFCANVAS) */}
       <Offcanvas show={showDetails} onHide={() => setShowDetails(false)} placement="end" style={{ width: "380px" }}>
         <Offcanvas.Header closeButton>
           <Offcanvas.Title className="fw-bold">{selectedStop?.name}</Offcanvas.Title>
@@ -279,6 +325,16 @@ const MapPage = () => {
           {selectedStop?.imageUrl && (
             <Image src={selectedStop.imageUrl} fluid rounded className="mb-3 shadow-sm w-100" style={{ height: "200px", objectFit: "cover" }} />
           )}
+
+          <div className="mb-3 p-2 bg-light rounded border text-center">
+            <small className="text-muted d-block">
+              Ultima verifica: {selectedStop?.lastVerified ? new Date(selectedStop.lastVerified).toLocaleDateString() : "Mai verificato"}
+            </small>
+            <div className="fw-bold text-success">👍 {selectedStop?.verifications || 0} ciclisti confermano</div>
+            <Button variant="success" size="sm" className="mt-2 rounded-pill w-100" onClick={() => handleVerify(selectedStop?._id)} disabled={!selectedStop}>
+              Confermo, funziona!
+            </Button>
+          </div>
 
           <div className="mb-4">
             <h6 className="text-uppercase text-muted small fw-bold">Descrizione</h6>
@@ -294,10 +350,9 @@ const MapPage = () => {
               className="rounded-pill d-flex align-items-center justify-content-center gap-2"
               onClick={() => handleCalculateRoute(selectedStop.location.coordinates)}
             >
-              <Navigation size={18} /> Portami Qui
+              <Navigation size={18} /> Anteprima Percorso
             </Button>
 
-            {/* navigazione esterna con Google Maps */}
             <Button
               variant="outline-dark"
               className="rounded-pill d-flex align-items-center justify-content-center gap-2 shadow-sm"
@@ -307,7 +362,6 @@ const MapPage = () => {
               Google Maps
             </Button>
 
-            {/* Gestione Stato nel Pannello */}
             {(selectedStop?.category === "fontanella" || selectedStop?.category === "ricarica-ebike") && (
               <div className="p-3 bg-light rounded border mt-2">
                 <div className="d-flex justify-content-between align-items-center mb-2">
@@ -327,7 +381,6 @@ const MapPage = () => {
 
           <hr />
 
-          {/* SEZIONE COMMENTI MIGLIORATA */}
           <div className="d-flex align-items-center gap-2 mb-3">
             <MessageSquare size={20} className="text-primary" />
             <h6 className="mb-0">Commenti ({selectedStop?.comments?.length || 0})</h6>
@@ -335,8 +388,8 @@ const MapPage = () => {
 
           <div className="comment-section mb-3" style={{ maxHeight: "300px", overflowY: "auto" }}>
             {selectedStop?.comments?.length > 0 ? (
-              selectedStop.comments.map((c, i) => (
-                <div key={i} className="mb-3 p-2 bg-light rounded shadow-sm border-start border-primary border-3">
+              selectedStop.comments.map((c) => (
+                <div key={c._id || c.date} className="mb-3 p-2 bg-light rounded shadow-sm border-start border-primary border-3">
                   <div className="d-flex justify-content-between small mb-1">
                     <span className="fw-bold">{c.userName}</span>
                     <span className="text-muted">{new Date(c.date).toLocaleDateString()}</span>
@@ -408,7 +461,6 @@ const MapPage = () => {
         </Modal.Body>
       </Modal>
 
-      {/* FILTRI CATEGORIE */}
       <div className="position-absolute w-100 d-flex justify-content-center" style={{ bottom: "30px", zIndex: 1000 }}>
         <div className="bg-white p-2 rounded-pill shadow d-flex gap-2 border px-3">
           {categories.map((cat) => (

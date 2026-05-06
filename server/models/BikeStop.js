@@ -34,7 +34,7 @@ const bikeStopSchema = new mongoose.Schema({
     enum: ["buca", "vetri", "lavori", "strada-chiusa", "altro"],
     default: null,
   },
-  lastVerified: { type: Date, default: Date.now },
+
   imageUrl: { type: String, default: "" },
   comments: [
     {
@@ -44,6 +44,9 @@ const bikeStopSchema = new mongoose.Schema({
       date: { type: Date, default: Date.now },
     },
   ],
+
+  lastVerified: { type: Date, default: Date.now },
+  verifications: { type: Number, default: 0 },
 });
 
 bikeStopSchema.index({ location: "2dsphere" });
