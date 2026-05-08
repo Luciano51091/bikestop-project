@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import MapPage from "./pages/MapPage";
 import Home from "./pages/Home";
+import "./App.css";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);

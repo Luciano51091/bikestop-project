@@ -34,16 +34,15 @@ const MapPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [newCoords, setNewCoords] = useState({ lat: null, lng: null });
   const [userLocation, setUserLocation] = useState(null);
-
   const [showDetails, setShowDetails] = useState(false);
   const [selectedStop, setSelectedStop] = useState(null);
-
   const [formData, setFormData] = useState({ name: "", description: "", category: "fontanella", hazardType: "" });
   const [imageFile, setImageFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-
   const [destination, setDestination] = useState(null);
   const [commentText, setCommentText] = useState("");
+  const [weather, setWeather] = useState(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
   const navigate = useNavigate();
 
   const fetchStops = async () => {
@@ -196,7 +195,11 @@ const MapPage = () => {
   const handleOpenDetails = (stop) => {
     setDestination(null);
     setSelectedStop(stop);
+    setWeather(null);
     setShowDetails(true);
+
+    const [lng, lat] = stop.location.coordinates;
+    fetchWeather(lat, lng);
   };
 
   const handleCalculateRoute = (coords) => {
@@ -251,6 +254,20 @@ const MapPage = () => {
     }
   };
 
+  const fetchWeather = async (lat, lon) => {
+    setWeatherLoading(true);
+    try {
+      const API_KEY = "b79ca9a0eecfc64bd15a15f4c5946618";
+      const res = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&lang=it&appid=${API_KEY}`);
+      setWeather(res.data);
+    } catch (err) {
+      console.error("Errore meteo:", err);
+      setWeather(null);
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
+
   if (loading)
     return (
       <div className="vh-100 d-flex justify-content-center align-items-center">
@@ -260,7 +277,7 @@ const MapPage = () => {
 
   return (
     <div style={{ position: "relative", height: "calc(100vh - 70px)", width: "100%", overflow: "hidden" }}>
-      {/* TASTO CANCELLA PERCORSO (Appare solo se c'è un percorso) */}
+      {/* TASTO CANCELLA PERCORSO */}
       {destination && (
         <Button
           variant="danger"
@@ -318,36 +335,143 @@ const MapPage = () => {
       </Button>
 
       <Offcanvas show={showDetails} onHide={() => setShowDetails(false)} placement="end" style={{ width: "380px" }}>
-        <Offcanvas.Header closeButton>
-          <Offcanvas.Title className="fw-bold">{selectedStop?.name}</Offcanvas.Title>
+        <Offcanvas.Header closeButton className="border-bottom">
+          <Offcanvas.Title className="fw-bold fs-4">{selectedStop?.name}</Offcanvas.Title>
         </Offcanvas.Header>
-        <Offcanvas.Body>
+
+        <Offcanvas.Body className="px-4 py-3">
+          {/* --- 1. SEZIONE METEO --- */}
+          <div className="weather-container">
+            {weatherLoading ? (
+              <div className="text-center py-4 mb-3 bg-light rounded-4 border border-dashed">
+                <Spinner animation="border" size="sm" variant="info" />
+              </div>
+            ) : (
+              weather && (
+                <div
+                  className="weather-widget d-flex align-items-center justify-content-between p-3 mb-4 rounded-4 shadow-sm"
+                  style={{
+                    background: "linear-gradient(135deg, #00b4db 0%, #0083b0 100%)",
+                    color: "white",
+                  }}
+                >
+                  <div className="d-flex align-items-center">
+                    <img
+                      src={`https://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png`}
+                      alt="meteo"
+                      style={{ width: "50px", filter: "drop-shadow(0px 0px 4px rgba(255,255,255,0.5))" }}
+                    />
+                    <div className="ms-3">
+                      <div className="fw-bold h3 mb-0">{Math.round(weather.main.temp)}°C</div>
+                      <div className="small text-capitalize" style={{ opacity: 0.9 }}>
+                        {weather.weather[0].description}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-end border-start border-white border-opacity-25 ps-3">
+                    <div className="small fw-bold text-uppercase" style={{ fontSize: "0.65rem", opacity: 0.8 }}>
+                      Vento
+                    </div>
+                    <div className="h6 mb-0">{Math.round(weather.wind.speed * 3.6)} km/h</div>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+
+          {/* --- 2. IMMAGINE --- */}
           {selectedStop?.imageUrl && (
-            <Image src={selectedStop.imageUrl} fluid rounded className="mb-3 shadow-sm w-100" style={{ height: "200px", objectFit: "cover" }} />
+            <div className="mb-4 text-center">
+              <Image
+                src={selectedStop.imageUrl}
+                fluid
+                rounded
+                className="shadow-sm w-100"
+                style={{ height: "220px", objectFit: "cover", borderRadius: "15px" }}
+              />
+            </div>
           )}
 
-          <div className="mb-3 p-2 bg-light rounded border text-center">
-            <small className="text-muted d-block">
+          {/* --- 3. WIDGET VERIFICA --- */}
+          <div className="mb-4 p-3 bg-white rounded-4 border shadow-sm text-center">
+            <small className="text-muted d-block mb-1">
               Ultima verifica: {selectedStop?.lastVerified ? new Date(selectedStop.lastVerified).toLocaleDateString() : "Mai verificato"}
             </small>
-            <div className="fw-bold text-success">👍 {selectedStop?.verifications || 0} ciclisti confermano</div>
-            <Button variant="success" size="sm" className="mt-2 rounded-pill w-100" onClick={() => handleVerify(selectedStop?._id)} disabled={!selectedStop}>
+            <div className="fw-bold text-success mb-2">
+              <span className="me-1">👍</span> {selectedStop?.verifications || 0} ciclisti confermano
+            </div>
+            <Button variant="success" size="sm" className="rounded-pill w-100 py-2" onClick={() => handleVerify(selectedStop?._id)}>
               Confermo, funziona!
             </Button>
           </div>
 
+          {/* --- SEZIONE STATO (Funzionante / Guasto) --- */}
           <div className="mb-4">
-            <h6 className="text-uppercase text-muted small fw-bold">Descrizione</h6>
-            <p>{selectedStop?.description || "Nessuna descrizione aggiuntiva."}</p>
-            <Badge bg="light" text="dark" className="border">
-              {selectedStop?.category}
+            <h6 className="text-uppercase text-muted small fw-bold mb-3" style={{ letterSpacing: "1px" }}>
+              Stato attuale
+            </h6>
+            <div className="d-flex gap-2">
+              <Button
+                variant={selectedStop?.status === "funzionante" ? "success" : "outline-success"}
+                className="flex-fill rounded-pill py-2 fw-bold"
+                style={{ fontSize: "0.85rem" }}
+                onClick={() => updateStatus(selectedStop._id, "funzionante")}
+              >
+                ✅ Funzionante
+              </Button>
+              <Button
+                variant={selectedStop?.status === "guasto" ? "danger" : "outline-danger"}
+                className="flex-fill rounded-pill py-2 fw-bold"
+                style={{ fontSize: "0.85rem" }}
+                onClick={() => updateStatus(selectedStop._id, "guasto")}
+              >
+                ❌ Guasto
+              </Button>
+            </div>
+
+            {selectedStop?.category === "pericolo" && (
+              <Button
+                variant="outline-dark"
+                className="w-100 mt-2 rounded-pill border-dashed"
+                size="sm"
+                onClick={() => updateStatus(selectedStop._id, "funzionante", "risolto")}
+              >
+                🎉 Segnala come risolto / rimosso
+              </Button>
+            )}
+          </div>
+
+          {/* --- 4. DESCRIZIONE --- */}
+          <div className="mb-4">
+            <h6 className="text-uppercase text-muted small fw-bold mb-2" style={{ letterSpacing: "1px" }}>
+              Descrizione
+            </h6>
+            <p className="text-dark" style={{ lineHeight: "1.6" }}>
+              {selectedStop?.description || "Nessuna descrizione aggiuntiva."}
+            </p>
+            <Badge
+              bg={
+                selectedStop?.category === "fontanella"
+                  ? "info"
+                  : selectedStop?.category === "officina"
+                    ? "warning"
+                    : selectedStop?.category === "ricarica-ebike"
+                      ? "success"
+                      : selectedStop?.category === "pericolo"
+                        ? "danger"
+                        : "secondary"
+              }
+              className="px-3 py-2 rounded-pill shadow-sm"
+            >
+              {selectedStop?.category ? selectedStop.category.charAt(0).toUpperCase() + selectedStop.category.slice(1).replace("-", " ").toLowerCase() : ""}
             </Badge>
           </div>
 
-          <div className="d-grid gap-2 mb-4">
+          {/* --- 5. AZIONI / NAVIGAZIONE --- */}
+          <div className="d-grid gap-3 mb-5">
             <Button
               variant="primary"
-              className="rounded-pill d-flex align-items-center justify-content-center gap-2"
+              className="rounded-pill py-2 d-flex align-items-center justify-content-center gap-2 shadow-sm"
               onClick={() => handleCalculateRoute(selectedStop.location.coordinates)}
             >
               <Navigation size={18} /> Anteprima Percorso
@@ -355,41 +479,26 @@ const MapPage = () => {
 
             <Button
               variant="outline-dark"
-              className="rounded-pill d-flex align-items-center justify-content-center gap-2 shadow-sm"
+              className="rounded-pill py-2 d-flex align-items-center justify-content-center gap-2"
               onClick={() => handleOpenGoogleMaps(selectedStop.location.coordinates)}
             >
-              <img src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Google_Maps_icon_%282020%29.svg" alt="GMaps" style={{ width: "18px" }} /> Naviga con
+              <img src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Google_Maps_icon_%282020%29.svg" alt="GMaps" style={{ width: "18px" }} />
               Google Maps
             </Button>
-
-            {(selectedStop?.category === "fontanella" || selectedStop?.category === "ricarica-ebike") && (
-              <div className="p-3 bg-light rounded border mt-2">
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <span>Stato: {selectedStop.status === "broken" ? "⚠️ Guasto" : "✅ Funzionante"}</span>
-                </div>
-                <div className="d-flex gap-2">
-                  <Button size="sm" variant="outline-success" className="flex-grow-1" onClick={() => updateStatus(selectedStop._id, "active")}>
-                    Attivo
-                  </Button>
-                  <Button size="sm" variant="outline-danger" className="flex-grow-1" onClick={() => updateStatus(selectedStop._id, "broken")}>
-                    Guasto
-                  </Button>
-                </div>
-              </div>
-            )}
           </div>
 
-          <hr />
+          <hr className="my-4 opacity-25" />
 
+          {/* --- 6. COMMENTI --- */}
           <div className="d-flex align-items-center gap-2 mb-3">
             <MessageSquare size={20} className="text-primary" />
-            <h6 className="mb-0">Commenti ({selectedStop?.comments?.length || 0})</h6>
+            <h6 className="mb-0 fw-bold">Commenti ({selectedStop?.comments?.length || 0})</h6>
           </div>
 
-          <div className="comment-section mb-3" style={{ maxHeight: "300px", overflowY: "auto" }}>
+          <div className="comment-section mb-4" style={{ maxHeight: "300px", overflowY: "auto" }}>
             {selectedStop?.comments?.length > 0 ? (
               selectedStop.comments.map((c) => (
-                <div key={c._id || c.date} className="mb-3 p-2 bg-light rounded shadow-sm border-start border-primary border-3">
+                <div key={c._id || c.date} className="mb-3 p-3 bg-light rounded-4 shadow-sm border-start border-primary border-3">
                   <div className="d-flex justify-content-between small mb-1">
                     <span className="fw-bold">{c.userName}</span>
                     <span className="text-muted">{new Date(c.date).toLocaleDateString()}</span>
@@ -398,16 +507,17 @@ const MapPage = () => {
                 </div>
               ))
             ) : (
-              <p className="text-muted small text-center">Ancora nessun commento. Sii il primo!</p>
+              <p className="text-muted small text-center py-3">Ancora nessun commento. Sii il primo!</p>
             )}
           </div>
 
-          <Form.Group className="mt-auto">
+          {/* --- 7. INPUT COMMENTO --- */}
+          <Form.Group className="mt-3">
             <Form.Control
               as="textarea"
               rows={2}
               placeholder="Scrivi un commento..."
-              className="mb-2"
+              className="mb-2 rounded-3"
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
             />

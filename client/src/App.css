@@ -2,3 +2,44 @@
   width: 100%;
   height: 70vh;
 }
+
+.offcanvas-body {
+  scroll-behavior: smooth;
+}
+
+.offcanvas {
+  border-top-left-radius: 20px;
+  border-bottom-left-radius: 20px;
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
+}
+
+.offcanvas-header {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+}
+
+.weather-widget {
+  transition: transform 0.3s ease;
+}
+
+.weather-widget:hover {
+  transform: translateY(-2px);
+}
+
+.comment-section::-webkit-scrollbar {
+  width: 6px;
+}
+
+.comment-section::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.comment-section::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 10px;
+}
+
+.comment-section::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
