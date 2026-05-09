@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import MapPage from "./pages/MapPage";
 import Home from "./pages/Home";
+import ProfilePage from "./pages/ProfilePage";
 import "./App.css";
 
 function App() {
@@ -57,6 +58,7 @@ function App() {
           <Route path="/login" element={<Login onLoginSuccess={checkUser} />} />
           <Route path="/register" element={<Register />} />
           <Route path="/mappa" element={<MapPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </Container>
     </Router>

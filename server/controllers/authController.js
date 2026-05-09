@@ -43,3 +43,14 @@ exports.login = async (req, res) => {
     res.status(500).send("Errore nel server");
   }
 };
+
+// server/controllers/authController.js
+
+exports.getMe = async (req, res) => {
+  try {
+    res.json(req.user);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Errore del server");
+  }
+};

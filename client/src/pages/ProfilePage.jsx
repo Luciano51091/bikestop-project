@@ -1,0 +1,191 @@
+import React, { useEffect, useState } from "react";
+import { Container, Row, Col, Card, Button, Badge, ListGroup, Spinner, Image } from "react-bootstrap";
+import { User, MapPin, CheckCircle, MessageSquare, Edit3, LogOut, Award, Calendar } from "lucide-react";
+import axios from "axios";
+import { useNavigate } from "react-router";
+
+const ProfilePage = () => {
+  const [user, setUser] = useState(null);
+  const [userStops, setUserStops] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        // Recupera dati utente (assumendo una rotta /api/auth/me o simile)
+        const userRes = await axios.get("http://localhost:5000/api/auth/me", {
+          headers: { "x-auth-token": token },
+        });
+        setUser(userRes.data);
+
+        // Recupera le soste create da questo utente
+        const stopsRes = await axios.get("http://localhost:5000/api/bikestops", {
+          headers: { "x-auth-token": token },
+        });
+        const myStops = stopsRes.data.filter((s) => s.userId === userRes.data._id);
+        setUserStops(myStops);
+      } catch (err) {
+        console.error("Errore caricamento profilo", err);
+        navigate("/login");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
+  if (loading)
+    return (
+      <div className="vh-100 d-flex justify-content-center align-items-center">
+        <Spinner animation="border" variant="primary" />
+      </div>
+    );
+
+  return (
+    <Container className="py-5">
+      <Row>
+        {/* --- COLONNA SINISTRA: CARD UTENTE --- */}
+        <Col lg={4} className="mb-4">
+          <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
+            <div style={{ height: "100px", background: "linear-gradient(135deg, #007bff 0%, #6610f2 100%)" }}></div>
+            <Card.Body className="text-center" style={{ marginTop: "-50px" }}>
+              <div className="mb-3">
+                <div className="bg-white p-1 rounded-circle d-inline-block shadow">
+                  <div className="bg-light rounded-circle d-flex align-items-center justify-content-center" style={{ width: "100px", height: "100px" }}>
+                    <User size={50} className="text-secondary" />
+                  </div>
+                </div>
+              </div>
+              <h4 className="fw-bold mb-1">{user?.username}</h4>
+              <p className="text-muted small mb-3">{user?.email}</p>
+
+              <div className="d-flex justify-content-center gap-2 mb-4">
+                <Badge bg="primary" className="rounded-pill px-3 py-2">
+                  Ciclista Esperto
+                </Badge>
+                <Badge bg="success" className="rounded-pill px-3 py-2">
+                  Verificatore
+                </Badge>
+              </div>
+
+              <div className="d-grid gap-2">
+                <Button variant="outline-primary" size="sm" className="rounded-pill">
+                  <Edit3 size={16} className="me-2" /> Modifica Profilo
+                </Button>
+                <Button variant="outline-danger" size="sm" className="rounded-pill" onClick={handleLogout}>
+                  <LogOut size={16} className="me-2" /> Logout
+                </Button>
+              </div>
+            </Card.Body>
+          </Card>
+
+          {/* CARD PREMI/BADGE */}
+          <Card className="border-0 shadow-sm rounded-4 mt-4 p-3">
+            <h6 className="fw-bold mb-3 d-flex align-items-center">
+              <Award className="me-2 text-warning" /> Obiettivi Raggiunti
+            </h6>
+            <div className="d-flex flex-wrap gap-2">
+              <div className="p-2 bg-light rounded-circle" title="Primo Punto Aggiunto">
+                📍
+              </div>
+              <div className="p-2 bg-light rounded-circle" title="10 Verifiche">
+                ✅
+              </div>
+              <div className="p-2 bg-light rounded-circle" title="Foto Maker">
+                📸
+              </div>
+              <div className="p-2 bg-light rounded-circle" style={{ opacity: 0.3 }} title="Esploratore (Bloccato)">
+                🗺️
+              </div>
+            </div>
+          </Card>
+        </Col>
+
+        {/* --- COLONNA DESTRA: STATISTICHE E ATTIVITÀ --- */}
+        <Col lg={8}>
+          {/* GRID STATISTICHE */}
+          <Row className="mb-4">
+            <Col md={4} className="mb-3 mb-md-0">
+              <Card className="border-0 shadow-sm rounded-4 text-center p-3">
+                <MapPin className="mx-auto mb-2 text-primary" size={28} />
+                <h3 className="fw-bold mb-0">{userStops.length}</h3>
+                <small className="text-muted uppercase fw-bold" style={{ fontSize: "0.7rem" }}>
+                  Punti Creati
+                </small>
+              </Card>
+            </Col>
+            <Col md={4} className="mb-3 mb-md-0">
+              <Card className="border-0 shadow-sm rounded-4 text-center p-3">
+                <CheckCircle className="mx-auto mb-2 text-success" size={28} />
+                <h3 className="fw-bold mb-0">{user?.totalVerifications || 0}</h3>
+                <small className="text-muted uppercase fw-bold" style={{ fontSize: "0.7rem" }}>
+                  Verifiche Inviate
+                </small>
+              </Card>
+            </Col>
+            <Col md={4}>
+              <Card className="border-0 shadow-sm rounded-4 text-center p-3">
+                <MessageSquare className="mx-auto mb-2 text-info" size={28} />
+                <h3 className="fw-bold mb-0">{user?.totalComments || 0}</h3>
+                <small className="text-muted uppercase fw-bold" style={{ fontSize: "0.7rem" }}>
+                  Commenti
+                </small>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* LISTA PUNTI CREATI */}
+          <Card className="border-0 shadow-sm rounded-4">
+            <Card.Header className="bg-white border-0 py-3">
+              <h5 className="fw-bold mb-0">I tuoi contributi alla mappa</h5>
+            </Card.Header>
+            <Card.Body className="p-0">
+              <ListGroup variant="flush">
+                {userStops.length > 0 ? (
+                  userStops.map((stop) => (
+                    <ListGroup.Item key={stop._id} className="py-3 px-4 border-light d-flex align-items-center justify-content-between">
+                      <div className="d-flex align-items-center">
+                        <div
+                          className={`p-2 rounded-3 me-3 bg-opacity-10 ${stop.category === "pericolo" ? "bg-danger text-danger" : "bg-primary text-primary"}`}
+                        >
+                          <MapPin size={20} />
+                        </div>
+                        <div>
+                          <div className="fw-bold">{stop.name}</div>
+                          <div className="text-muted small d-flex align-items-center">
+                            <Calendar size={12} className="me-1" />
+                            {new Date(stop.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                      <Button variant="light" size="sm" className="rounded-pill px-3" onClick={() => navigate("/")}>
+                        Vedi
+                      </Button>
+                    </ListGroup.Item>
+                  ))
+                ) : (
+                  <div className="text-center py-5 text-muted">
+                    <p>Non hai ancora aggiunto alcun punto sulla mappa.</p>
+                    <Button variant="primary" size="sm" className="rounded-pill" onClick={() => navigate("/")}>
+                      Inizia ora
+                    </Button>
+                  </div>
+                )}
+              </ListGroup>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    </Container>
+  );
+};
+
+export default ProfilePage;
