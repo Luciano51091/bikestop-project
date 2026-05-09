@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Container, Row, Col, Card, Button, Badge, ListGroup, Spinner, Image } from "react-bootstrap";
-import { User, MapPin, CheckCircle, MessageSquare, Edit3, LogOut, Award, Calendar } from "lucide-react";
+import { User, MapPin, CheckCircle, MessageSquare, Edit3, LogOut, Award, Calendar, Camera } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router";
 
@@ -8,19 +8,44 @@ const ProfilePage = () => {
   const [user, setUser] = useState(null);
   const [userStops, setUserStops] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "bikestop_preset");
+
+    try {
+      const res = await axios.post("https://api.cloudinary.com/v1_1/dbql5hkcb/image/upload", formData);
+      const imageUrl = res.data.secure_url;
+
+      const token = localStorage.getItem("token");
+      const response = await axios.put("http://localhost:5000/api/auth/update", { profileImage: imageUrl }, { headers: { "x-auth-token": token } });
+
+      setUser(response.data);
+      alert("Foto profilo aggiornata!");
+    } catch (err) {
+      console.error("Errore upload:", err);
+      alert("Errore durante il caricamento");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
         const token = localStorage.getItem("token");
-        // Recupera dati utente (assumendo una rotta /api/auth/me o simile)
         const userRes = await axios.get("http://localhost:5000/api/auth/me", {
           headers: { "x-auth-token": token },
         });
         setUser(userRes.data);
 
-        // Recupera le soste create da questo utente
         const stopsRes = await axios.get("http://localhost:5000/api/bikestops", {
           headers: { "x-auth-token": token },
         });
@@ -57,12 +82,25 @@ const ProfilePage = () => {
           <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
             <div style={{ height: "100px", background: "linear-gradient(135deg, #007bff 0%, #6610f2 100%)" }}></div>
             <Card.Body className="text-center" style={{ marginTop: "-50px" }}>
-              <div className="mb-3">
-                <div className="bg-white p-1 rounded-circle d-inline-block shadow">
-                  <div className="bg-light rounded-circle d-flex align-items-center justify-content-center" style={{ width: "100px", height: "100px" }}>
-                    <User size={50} className="text-secondary" />
-                  </div>
+              <div className="mb-3 position-relative d-inline-block">
+                <div className="bg-white p-1 rounded-circle shadow">
+                  {user?.profileImage ? (
+                    <Image src={user.profileImage} roundedCircle style={{ width: "100px", height: "100px", objectFit: "cover" }} />
+                  ) : (
+                    <div className="bg-light rounded-circle d-flex align-items-center justify-content-center" style={{ width: "100px", height: "100px" }}>
+                      <User size={50} className="text-secondary" />
+                    </div>
+                  )}
                 </div>
+
+                <label
+                  htmlFor="profile-upload"
+                  className="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+                  style={{ width: "32px", height: "32px", cursor: "pointer", border: "2px solid white" }}
+                >
+                  {uploading ? <Spinner animation="border" size="sm" /> : <Camera size={16} />}
+                </label>
+                <input id="profile-upload" type="file" hidden onChange={handleImageUpload} disabled={uploading} />
               </div>
               <h4 className="fw-bold mb-1">{user?.username}</h4>
               <p className="text-muted small mb-3">{user?.email}</p>

@@ -44,13 +44,28 @@ exports.login = async (req, res) => {
   }
 };
 
-// server/controllers/authController.js
-
 exports.getMe = async (req, res) => {
   try {
     res.json(req.user);
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Errore del server");
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const { profileImage, username } = req.body;
+    const updateData = {};
+
+    if (profileImage) updateData.profileImage = profileImage;
+    if (username) updateData.username = username;
+
+    const user = await User.findByIdAndUpdate(req.user.id, { $set: updateData }, { new: true }).select("-password");
+
+    res.json(user);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Errore nel server");
   }
 };
