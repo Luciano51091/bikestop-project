@@ -1,0 +1,34 @@
+# --- DIPENDENZE ---
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# --- SEGRETI E VARIABILI (Fondamentale!) ---
+.env
+.env.local
+.env.*.local
+server/.env
+client/.env
+
+# --- BUILD E OUTPUT ---
+dist/
+client/dist/
+server/dist/
+build/
+.cache/
+
+# --- LOGS ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- SISTEMA E EDITOR ---
+.DS_Store
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
