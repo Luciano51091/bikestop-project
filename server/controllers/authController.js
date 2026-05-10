@@ -90,6 +90,17 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
+const handleUpdate = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const res = await axios.put("http://localhost:5000/api/auth/update", { username: newUsername }, { headers: { "x-auth-token": token } });
+    setCurrentUser(res.data);
+    alert("Profilo aggiornato!");
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 exports.toggleFavorite = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);

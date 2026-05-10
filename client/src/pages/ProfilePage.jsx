@@ -105,13 +105,9 @@ const ProfilePage = () => {
               <h4 className="fw-bold mb-1">{user?.username}</h4>
               <p className="text-muted small mb-3">{user?.email}</p>
 
-              <div className="d-flex justify-content-center gap-2 mb-4">
-                <Badge bg="primary" className="rounded-pill px-3 py-2">
-                  Ciclista Esperto
-                </Badge>
-                <Badge bg="success" className="rounded-pill px-3 py-2">
-                  Verificatore
-                </Badge>
+              <div className="d-flex justify-content-center gap-2 mb-4 badges">
+                {user?.stats?.stopsCreated >= 5 && <span className="badge">🚴 Ciclista Esperto</span>}
+                {user?.stats?.totalVerifications > 0 && <span className="badge">✅ Verificatore</span>}
               </div>
 
               <div className="d-grid gap-2">
