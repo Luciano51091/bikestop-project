@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const BikeStop = require("../models/BikeStop");
 
 exports.register = async (req, res) => {
   try {
@@ -46,7 +47,25 @@ exports.login = async (req, res) => {
 
 exports.getMe = async (req, res) => {
   try {
-    res.json(req.user);
+    const userId = req.user._id;
+    const stopsCreated = await BikeStop.countDocuments({ userId });
+
+    const stopsWithMyComments = await BikeStop.find({ "comments.userId": userId });
+    let totalComments = 0;
+    stopsWithMyComments.forEach((stop) => {
+      totalComments += stop.comments.filter((c) => c.userId.toString() === userId.toString()).length;
+    });
+
+    const totalVerifications = await BikeStop.countDocuments({ verifiedBy: userId });
+
+    res.json({
+      ...req.user._doc,
+      stats: {
+        stopsCreated,
+        totalComments,
+        totalVerifications,
+      },
+    });
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Errore del server");

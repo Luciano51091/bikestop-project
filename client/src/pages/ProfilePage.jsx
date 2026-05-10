@@ -131,17 +131,28 @@ const ProfilePage = () => {
               <Award className="me-2 text-warning" /> Obiettivi Raggiunti
             </h6>
             <div className="d-flex flex-wrap gap-2">
-              <div className="p-2 bg-light rounded-circle" title="Primo Punto Aggiunto">
+              {/* Badge Primo Punto */}
+              <div
+                className={`p-2 rounded-circle ${user?.stats?.stopsCreated > 0 ? "bg-warning-subtle" : "bg-light opacity-50"}`}
+                title="Pioniere: Hai aggiunto il tuo primo punto"
+              >
                 📍
               </div>
-              <div className="p-2 bg-light rounded-circle" title="10 Verifiche">
+
+              {/* Badge Verificatore */}
+              <div
+                className={`p-2 rounded-circle ${user?.stats?.totalVerifications >= 5 ? "bg-success-subtle" : "bg-light opacity-50"}`}
+                title="Verificatore: 5 verifiche effettuate"
+              >
                 ✅
               </div>
-              <div className="p-2 bg-light rounded-circle" title="Foto Maker">
-                📸
-              </div>
-              <div className="p-2 bg-light rounded-circle" style={{ opacity: 0.3 }} title="Esploratore (Bloccato)">
-                🗺️
+
+              {/* Badge Chiacchierone */}
+              <div
+                className={`p-2 rounded-circle ${user?.stats?.totalComments >= 10 ? "bg-info-subtle" : "bg-light opacity-50"}`}
+                title="Social: 10 commenti scritti"
+              >
+                💬
               </div>
             </div>
           </Card>
@@ -149,12 +160,12 @@ const ProfilePage = () => {
 
         {/* --- COLONNA DESTRA: STATISTICHE E ATTIVITÀ --- */}
         <Col lg={8}>
-          {/* GRID STATISTICHE */}
+          {/* --- GRID STATISTICHE REAL-TIME --- */}
           <Row className="mb-4">
             <Col md={4} className="mb-3 mb-md-0">
               <Card className="border-0 shadow-sm rounded-4 text-center p-3">
                 <MapPin className="mx-auto mb-2 text-primary" size={28} />
-                <h3 className="fw-bold mb-0">{userStops.length}</h3>
+                <h3 className="fw-bold mb-0">{user?.stats?.stopsCreated || 0}</h3>
                 <small className="text-muted uppercase fw-bold" style={{ fontSize: "0.7rem" }}>
                   Punti Creati
                 </small>
@@ -163,16 +174,16 @@ const ProfilePage = () => {
             <Col md={4} className="mb-3 mb-md-0">
               <Card className="border-0 shadow-sm rounded-4 text-center p-3">
                 <CheckCircle className="mx-auto mb-2 text-success" size={28} />
-                <h3 className="fw-bold mb-0">{user?.totalVerifications || 0}</h3>
+                <h3 className="fw-bold mb-0">{user?.stats?.totalVerifications || 0}</h3>
                 <small className="text-muted uppercase fw-bold" style={{ fontSize: "0.7rem" }}>
-                  Verifiche Inviate
+                  Verifiche
                 </small>
               </Card>
             </Col>
             <Col md={4}>
               <Card className="border-0 shadow-sm rounded-4 text-center p-3">
                 <MessageSquare className="mx-auto mb-2 text-info" size={28} />
-                <h3 className="fw-bold mb-0">{user?.totalComments || 0}</h3>
+                <h3 className="fw-bold mb-0">{user?.stats?.totalComments || 0}</h3>
                 <small className="text-muted uppercase fw-bold" style={{ fontSize: "0.7rem" }}>
                   Commenti
                 </small>
