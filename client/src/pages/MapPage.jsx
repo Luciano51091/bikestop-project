@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Spinner, Modal, Button, Form, Image, Offcanvas, Badge } from "react-bootstrap";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from "react-leaflet";
 import axios from "axios";
-import { MapPin, Droplets, Wrench, Zap, AlertTriangle, Camera, MessageSquare, Navigation, X } from "lucide-react";
+import { MapPin, Droplets, Wrench, Zap, AlertTriangle, Camera, MessageSquare, Navigation, X, Heart } from "lucide-react";
 import { useNavigate } from "react-router";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -43,6 +43,7 @@ const MapPage = () => {
   const [commentText, setCommentText] = useState("");
   const [weather, setWeather] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
 
   const fetchStops = async () => {
@@ -268,6 +269,49 @@ const MapPage = () => {
     }
   };
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (token) {
+          const res = await axios.get("http://localhost:5000/api/auth/me", {
+            headers: { "x-auth-token": token },
+          });
+          setCurrentUser(res.data);
+        }
+      } catch (err) {
+        console.error("Errore recupero utente", err);
+        if (err.response?.status === 500 || err.response?.status === 401) {
+          localStorage.removeItem("token");
+          navigate("/login");
+        }
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const handleToggleFavorite = async (stopId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return alert("Devi essere loggato!");
+
+      const res = await axios.post(
+        `http://localhost:5000/api/auth/favorite/${stopId}`,
+        {},
+        {
+          headers: { "x-auth-token": token },
+        },
+      );
+
+      setCurrentUser({ ...currentUser, favorites: res.data });
+    } catch (err) {
+      console.error(err);
+      alert("Errore nell'aggiornamento dei preferiti");
+    }
+  };
+
+  const isFavorite = currentUser?.favorites?.some((fav) => (typeof fav === "string" ? fav : fav._id) === selectedStop?._id);
+
   if (loading)
     return (
       <div className="vh-100 d-flex justify-content-center align-items-center">
@@ -337,6 +381,9 @@ const MapPage = () => {
       <Offcanvas show={showDetails} onHide={() => setShowDetails(false)} placement="end" style={{ width: "380px" }}>
         <Offcanvas.Header closeButton className="border-bottom">
           <Offcanvas.Title className="fw-bold fs-4">{selectedStop?.name}</Offcanvas.Title>
+          <Button variant="link" onClick={() => handleToggleFavorite(selectedStop._id)} className="p-0 text-danger">
+            <Heart size={24} color={isFavorite ? "#ff4d4d" : "#6c757d"} fill={isFavorite ? "#ff4d4d" : "none"} style={{ transition: "all 0.3s ease" }} />
+          </Button>
         </Offcanvas.Header>
 
         <Offcanvas.Body className="px-4 py-3">

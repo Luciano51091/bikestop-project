@@ -7,5 +7,6 @@ router.post("/register", authController.register);
 router.post("/login", authController.login);
 router.get("/me", auth, authController.getMe);
 router.put("/update", auth, authController.updateProfile);
+router.post("/favorite/:stopId", auth, authController.toggleFavorite);
 
 module.exports = router;

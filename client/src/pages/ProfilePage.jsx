@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Container, Row, Col, Card, Button, Badge, ListGroup, Spinner, Image } from "react-bootstrap";
-import { User, MapPin, CheckCircle, MessageSquare, Edit3, LogOut, Award, Calendar, Camera } from "lucide-react";
+import { User, MapPin, CheckCircle, MessageSquare, Edit3, LogOut, Award, Calendar, Camera, Heart } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router";
 
@@ -226,6 +226,35 @@ const ProfilePage = () => {
                     <Button variant="primary" size="sm" className="rounded-pill" onClick={() => navigate("/")}>
                       Inizia ora
                     </Button>
+                  </div>
+                )}
+              </ListGroup>
+            </Card.Body>
+          </Card>
+
+          {/* --- SEZIONE PREFERITI --- */}
+          <Card className="border-0 shadow-sm rounded-4 mt-4">
+            <Card.Header className="bg-white border-0 py-3 d-flex align-items-center">
+              <Heart size={20} className="text-danger me-2" fill="red" />
+              <h5 className="fw-bold mb-0">I tuoi luoghi salvati</h5>
+            </Card.Header>
+            <Card.Body className="p-0">
+              <ListGroup variant="flush">
+                {user?.favorites?.length > 0 ? (
+                  user.favorites.map((fav) => (
+                    <ListGroup.Item key={fav._id} className="py-3 px-4 d-flex justify-content-between align-items-center">
+                      <div>
+                        <div className="fw-bold">{fav.name}</div>
+                        <small className="text-muted text-capitalize">{fav.category}</small>
+                      </div>
+                      <Button variant="outline-primary" size="sm" className="rounded-pill" onClick={() => navigate("/")}>
+                        Vai alla mappa
+                      </Button>
+                    </ListGroup.Item>
+                  ))
+                ) : (
+                  <div className="text-center py-4 text-muted">
+                    <small>Non hai ancora salvato nessun preferito.</small>
                   </div>
                 )}
               </ListGroup>

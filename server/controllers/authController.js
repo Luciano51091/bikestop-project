@@ -47,7 +47,8 @@ exports.login = async (req, res) => {
 
 exports.getMe = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
+    const user = await User.findById(userId).select("-password").populate("favorites");
     const stopsCreated = await BikeStop.countDocuments({ userId });
 
     const stopsWithMyComments = await BikeStop.find({ "comments.userId": userId });
@@ -59,7 +60,7 @@ exports.getMe = async (req, res) => {
     const totalVerifications = await BikeStop.countDocuments({ verifiedBy: userId });
 
     res.json({
-      ...req.user._doc,
+      ...user._doc,
       stats: {
         stopsCreated,
         totalComments,
@@ -86,5 +87,25 @@ exports.updateProfile = async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Errore nel server");
+  }
+};
+
+exports.toggleFavorite = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const stopId = req.params.stopId;
+
+    const isFavorite = user.favorites.includes(stopId);
+
+    if (isFavorite) {
+      user.favorites = user.favorites.filter((id) => id.toString() !== stopId);
+    } else {
+      user.favorites.push(stopId);
+    }
+
+    await user.save();
+    res.json(user.favorites);
+  } catch (err) {
+    res.status(500).send("Errore salvataggio preferiti");
   }
 };
