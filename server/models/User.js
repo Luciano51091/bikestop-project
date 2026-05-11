@@ -16,6 +16,12 @@ const userSchema = new mongoose.Schema({
     default: "",
   },
 
+  stats: {
+    stopsCreated: { type: Number, default: 0 },
+    totalVerifications: { type: Number, default: 0 },
+    totalComments: { type: Number, default: 0 },
+  },
+
   favorites: [
     {
       type: mongoose.Schema.Types.ObjectId,

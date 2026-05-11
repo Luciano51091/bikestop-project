@@ -15,7 +15,7 @@ const Home = () => {
       >
         <Container className="py-5 text-center">
           <h1 className="display-3 fw-bold mb-3">Pedala. Trova. Condividi.</h1>
-          <p className="lead mb-4 text-secondary">La mappa collaborativa per i ciclisti urbani. Trova fontanelle, officine e punti di ricarica in un click.</p>
+          <p className="lead mb-4 text-secondary">La mappa collaborativa per i ciclisti. Trova fontanelle, officine e punti di ricarica in un click.</p>
           <Button variant="primary" size="lg" className="px-5 py-3 fw-bold shadow" onClick={() => navigate("/mappa")}>
             Esplora la Mappa
           </Button>

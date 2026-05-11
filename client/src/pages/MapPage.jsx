@@ -140,6 +140,7 @@ const MapPage = () => {
         { ...formData, name: finalName, latitude: newCoords.lat, longitude: newCoords.lng, imageUrl: imageUrl },
         { headers: { "x-auth-token": token } },
       );
+      await refreshUser();
       setShowModal(false);
       setFormData({ name: "", description: "", category: "fontanella", hazardType: "" });
       setImageFile(null);
@@ -157,9 +158,24 @@ const MapPage = () => {
       const token = localStorage.getItem("token");
       await axios.post(`http://localhost:5000/api/bikestops/${stopId}/comment`, { text: commentText }, { headers: { "x-auth-token": token } });
       setCommentText("");
+      await refreshUser();
       fetchStops();
     } catch (err) {
       alert("Errore");
+    }
+  };
+
+  const refreshUser = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const res = await axios.get("http://localhost:5000/api/auth/me", {
+          headers: { "x-auth-token": token },
+        });
+        setCurrentUser(res.data);
+      }
+    } catch (err) {
+      console.error("Errore refresh utente", err);
     }
   };
 
@@ -203,6 +219,25 @@ const MapPage = () => {
     fetchWeather(lat, lng);
   };
 
+  const handleShowDetails = (stop) => {
+    handleOpenDetails(stop);
+  };
+
+  const handleReportIssue = async (id) => {
+    if (!window.confirm("Vuoi segnalare un problema con questa sosta?")) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      await axios.patch(`http://localhost:5000/api/bikestops/${id}/status`, { status: "guasto" }, { headers: { "x-auth-token": token } });
+      alert("Segnalazione inviata. Grazie per il contributo!");
+      fetchStops();
+    } catch (err) {
+      console.error(err);
+      alert("Errore durante la segnalazione");
+    }
+  };
+
   const handleCalculateRoute = (coords) => {
     const startRouting = (lat, lng) => {
       setDestination(null);
@@ -242,16 +277,22 @@ const MapPage = () => {
     window.open(url, "_blank");
   };
 
-  const handleVerify = async (id) => {
+  const handleVerify = async (id, isWorking) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.patch(`http://localhost:5000/api/bikestops/${id}/verify`, {}, { headers: { "x-auth-token": token } });
+
+      const statusValue = isWorking ? "works" : "broken";
+
+      const res = await axios.patch(`http://localhost:5000/api/bikestops/${id}/verify`, { status: statusValue }, { headers: { "x-auth-token": token } });
 
       setSelectedStop(res.data);
 
       fetchStops();
+
+      alert("Grazie per la tua segnalazione!");
     } catch (err) {
-      alert("Errore durante la verifica");
+      console.error("Errore verifica:", err.response?.data?.msg || err.message);
+      alert(err.response?.data?.msg || "Errore durante la verifica");
     }
   };
 
@@ -358,11 +399,47 @@ const MapPage = () => {
         {filteredStops.map((stop) => (
           <Marker key={stop._id} position={[stop.location.coordinates[1], stop.location.coordinates[0]]} icon={getCategoryIcon(stop.category)}>
             <Popup>
-              <div className="text-center">
-                <h6>{stop.name}</h6>
-                {stop.imageUrl && <Image src={stop.imageUrl} fluid rounded className="mb-2" style={{ maxHeight: "50px" }} />}
-                <Button size="sm" variant="primary" className="w-100 rounded-pill" onClick={() => handleOpenDetails(stop)}>
-                  Vedi Dettagli
+              <div className="p-2" style={{ minWidth: "180px" }}>
+                <h6 className="fw-bold mb-1">{stop.name}</h6>
+                <p className="text-muted small mb-2 text-capitalize">{stop.category}</p>
+
+                <hr className="my-2" />
+
+                <div className="mb-3">
+                  {stop.category === "pericolo" ? (
+                    // --- LOGICA PER I PERICOLI ---
+                    <>
+                      <Button variant="outline-danger" size="sm" className="w-100 mb-1" onClick={() => handleVerify(stop._id, false)}>
+                        🚫 Conferma Pericolo
+                      </Button>
+                      <Button variant="outline-dark" size="sm" className="w-100" onClick={() => updateStatus(stop._id, "active", "risolto")}>
+                        ✅ Risolto/Rimosso
+                      </Button>
+                    </>
+                  ) : (
+                    // --- LOGICA PER FONTANELLE, RICARICA E OFFICINE ---
+                    <>
+                      <span className="d-block small fw-bold mb-1">Questa sosta è affidabile?</span>
+
+                      {stop.category === "fontanella" || stop.category === "ricarica-ebike" ? (
+                        <Button variant="outline-success" size="sm" className="w-100 mb-1" onClick={() => handleVerify(stop._id, true)}>
+                          {stop.category === "fontanella" ? "💧 Funziona!" : "⚡ Funziona!"}
+                        </Button>
+                      ) : (
+                        <Button variant="outline-success" size="sm" className="w-100 mb-1" onClick={() => handleVerify(stop._id, true)}>
+                          🔧 Attiva/Aperta
+                        </Button>
+                      )}
+
+                      <Button variant="outline-danger" size="sm" className="w-100" onClick={() => handleVerify(stop._id, false)}>
+                        🚫 Segnala problema
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                <Button variant="link" className="p-0 w-100 text-decoration-none small text-center" onClick={() => handleShowDetails(stop)}>
+                  Vedi dettagli...
                 </Button>
               </div>
             </Popup>
@@ -459,18 +536,18 @@ const MapPage = () => {
             </h6>
             <div className="d-flex gap-2">
               <Button
-                variant={selectedStop?.status === "funzionante" ? "success" : "outline-success"}
+                variant={selectedStop?.status === "active" ? "success" : "outline-success"}
                 className="flex-fill rounded-pill py-2 fw-bold"
                 style={{ fontSize: "0.85rem" }}
-                onClick={() => updateStatus(selectedStop._id, "funzionante")}
+                onClick={() => updateStatus(selectedStop._id, "active")}
               >
                 ✅ Funzionante
               </Button>
               <Button
-                variant={selectedStop?.status === "guasto" ? "danger" : "outline-danger"}
+                variant={selectedStop?.status === "broken" ? "danger" : "outline-danger"}
                 className="flex-fill rounded-pill py-2 fw-bold"
                 style={{ fontSize: "0.85rem" }}
-                onClick={() => updateStatus(selectedStop._id, "guasto")}
+                onClick={() => updateStatus(selectedStop._id, "broken")}
               >
                 ❌ Guasto
               </Button>
@@ -481,7 +558,7 @@ const MapPage = () => {
                 variant="outline-dark"
                 className="w-100 mt-2 rounded-pill border-dashed"
                 size="sm"
-                onClick={() => updateStatus(selectedStop._id, "funzionante", "risolto")}
+                onClick={() => updateStatus(selectedStop._id, "active", "risolto")}
               >
                 🎉 Segnala come risolto / rimosso
               </Button>

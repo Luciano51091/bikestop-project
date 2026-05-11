@@ -1,4 +1,6 @@
+const { default: mongoose } = require("mongoose");
 const BikeStop = require("../models/BikeStop");
+const User = require("../models/User");
 
 exports.createStop = async (req, res) => {
   try {
@@ -24,6 +26,11 @@ exports.createStop = async (req, res) => {
     });
 
     const savedStop = await newStop.save();
+
+    await mongoose.model("User").findByIdAndUpdate(req.user.id, {
+      $inc: { "stats.stopsCreated": 1 },
+    });
+
     res.status(201).json(savedStop);
   } catch (err) {
     console.error("ERRORE BACKEND:", err.message);
@@ -31,7 +38,7 @@ exports.createStop = async (req, res) => {
   }
 };
 
-// TUTTI I PUNTOI BIKESTOP (per visualizzarli sulla mappa)
+// TUTTI I PUNTOI BIKESTOP
 exports.getAllStops = async (req, res) => {
   try {
     const stops = await BikeStop.find();
@@ -45,30 +52,31 @@ exports.getAllStops = async (req, res) => {
 exports.updateStatus = async (req, res) => {
   try {
     const { status, hazardType } = req.body;
-
     const stopToUpdate = await BikeStop.findById(req.params.id);
+
     if (!stopToUpdate) {
       return res.status(404).json({ msg: "BikeStop non trovato" });
     }
 
     const updateData = { lastVerified: Date.now() };
 
-    if (status !== undefined) updateData.status = status;
+    if (status !== undefined) {
+      updateData.status = status === "funzionante" || status === "active" ? "active" : "broken";
+    }
 
     if (hazardType !== undefined) {
       updateData.hazardType = hazardType;
-
       if (stopToUpdate.category === "pericolo" && hazardType !== null) {
         updateData.name = `Pericolo: ${hazardType}`;
       }
     }
 
-    const updatedStop = await BikeStop.findByIdAndUpdate(req.params.id, updateData, { returnDocument: "after" });
+    const updatedStop = await BikeStop.findByIdAndUpdate(req.params.id, { $set: updateData }, { new: true, runValidators: true });
 
     res.json(updatedStop);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Errore nell'aggiornamento dello stato");
+    console.error("ERRORE UPDATE STATUS:", err.message);
+    res.status(500).send("Errore nell'aggiornamento dello stato: " + err.message);
   }
 };
 
@@ -94,16 +102,18 @@ exports.addComment = async (req, res) => {
 
     if (!stop) return res.status(404).json({ msg: "Punto non trovato" });
 
-    console.log("Utente che commenta:", req.user);
-
     const newComment = {
       user: req.user.id,
       userName: req.user.username || req.user.email || "Ciclista Anonimo",
       text: text,
+      date: Date.now(),
     };
 
     stop.comments.unshift(newComment);
     await stop.save();
+    await User.findByIdAndUpdate(req.user.id, {
+      $inc: { "stats.totalComments": 1 },
+    });
 
     res.json(stop.comments);
   } catch (err) {
@@ -112,16 +122,69 @@ exports.addComment = async (req, res) => {
   }
 };
 
-// Cerca la funzione exports.rating e sostituiscila con questa:
 exports.rating = async (req, res) => {
   try {
     const stop = await BikeStop.findByIdAndUpdate(req.params.id, { $inc: { verifications: 1 }, lastVerified: Date.now() }, { returnDocument: "after" });
 
     if (!stop) return res.status(404).json({ msg: "Punto non trovato" });
 
+    const User = require("../models/User");
+    await User.findByIdAndUpdate(req.user.id, {
+      $inc: { "stats.totalVerifications": 1 },
+    });
+
+    stop.verifiedBy.push(req.user.id);
+    await stop.save();
+
     res.json(stop);
   } catch (err) {
     console.error("ERRORE RATING:", err.message);
     res.status(500).send("Errore nell'aggiornamento della verifica");
+  }
+};
+
+exports.verifyStop = async (req, res) => {
+  try {
+    const stop = await BikeStop.findById(req.params.id);
+    if (!stop) return res.status(404).json({ msg: "Punto non trovato" });
+
+    const incomingStatus = req.body.status;
+    const finalStatus = incomingStatus === "broken" || incomingStatus === "guasto" ? "broken" : "active";
+
+    if (stop.verifiedBy.includes(req.user.id)) {
+      return res.status(400).json({ msg: "Hai già verificato questo punto" });
+    }
+
+    stop.verifiedBy.push(req.user.id);
+    stop.status = finalStatus;
+    stop.lastVerified = Date.now();
+    stop.verifications = (stop.verifications || 0) + 1;
+
+    if (finalStatus === "active") {
+      stop.ratings.works = (stop.ratings.works || 0) + 1;
+    } else {
+      stop.ratings.notWorks = (stop.ratings.notWorks || 0) + 1;
+    }
+
+    await stop.save();
+
+    await User.findByIdAndUpdate(req.user.id, {
+      $inc: { "stats.totalVerifications": 1 },
+    });
+
+    res.json(stop);
+  } catch (err) {
+    console.error("ERRORE RATING:", err.message);
+    res.status(500).json({ msg: "Errore validazione database", error: err.message });
+  }
+};
+
+exports.getUserStops = async (req, res) => {
+  try {
+    const stops = await BikeStop.find({ author: req.user.id });
+    res.json(stops);
+  } catch (err) {
+    console.error("ERRORE RECUPERO PUNTI UTENTE:", err.message);
+    res.status(500).send("Errore nel recupero dei tuoi punti");
   }
 };

@@ -49,12 +49,12 @@ exports.getMe = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId).select("-password").populate("favorites");
-    const stopsCreated = await BikeStop.countDocuments({ userId });
+    const stopsCreated = await BikeStop.countDocuments({ author: userId });
 
-    const stopsWithMyComments = await BikeStop.find({ "comments.userId": userId });
+    const stopsWithMyComments = await BikeStop.find({ "comments.user": userId });
     let totalComments = 0;
     stopsWithMyComments.forEach((stop) => {
-      totalComments += stop.comments.filter((c) => c.userId.toString() === userId.toString()).length;
+      totalComments += stop.comments.filter((c) => c.user && c.user.toString() === userId.toString()).length;
     });
 
     const totalVerifications = await BikeStop.countDocuments({ verifiedBy: userId });
@@ -68,7 +68,7 @@ exports.getMe = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error(err.message);
+    console.error("Errore in getMe:", err.message);
     res.status(500).send("Errore del server");
   }
 };

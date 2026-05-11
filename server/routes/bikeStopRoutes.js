@@ -3,6 +3,7 @@ const router = express.Router();
 const bikeStopController = require("../controllers/bikeStopController");
 const auth = require("../middleware/auth");
 
+router.get("/user/mystops", auth, bikeStopController.getUserStops);
 router.get("/", bikeStopController.getAllStops);
 router.post("/", auth, bikeStopController.createStop);
 router.patch("/:id/status", auth, bikeStopController.updateStatus);
