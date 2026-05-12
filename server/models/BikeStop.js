@@ -6,8 +6,19 @@ const bikeStopSchema = new mongoose.Schema(
     description: String,
     category: {
       type: String,
-      enum: ["officina", "fontanella", "ricarica-ebike", "hotel", "bar", "pericolo"],
+      enum: ["officina", "fontanella", "ricarica-ebike", "alloggio", "bar", "pericolo"],
       required: true,
+    },
+
+    services: {
+      hasWater: { type: Boolean, default: false },
+      hasTools: { type: Boolean, default: false },
+      hasCharging: { type: Boolean, default: false },
+
+      hasSecureParking: { type: Boolean, default: false },
+      hasPump: { type: Boolean, default: false },
+      hasShelter: { type: Boolean, default: false },
+      isBikeFriendly: { type: Boolean, default: true },
     },
 
     location: {

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Spinner, Modal, Button, Form, Image, Offcanvas, Badge } from "react-bootstrap";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from "react-leaflet";
 import axios from "axios";
-import { MapPin, Droplets, Wrench, Zap, AlertTriangle, Camera, MessageSquare, Navigation, X, Heart } from "lucide-react";
+import { MapPin, Droplets, Wrench, Zap, AlertTriangle, Camera, MessageSquare, Navigation, X, Heart, Coffee, Bed } from "lucide-react";
 import { useNavigate } from "react-router";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -78,6 +78,8 @@ const MapPage = () => {
     { id: "officina", label: "Officine", icon: <Wrench size={16} />, color: "warning" },
     { id: "ricarica-ebike", label: "E-Bike", icon: <Zap size={16} />, color: "success" },
     { id: "pericolo", label: "Pericolo", icon: <AlertTriangle size={16} />, color: "danger" },
+    { id: "bar", label: "Bar", icon: <Coffee size={16} />, color: "warning" },
+    { id: "alloggio", label: "Alloggi", icon: <Bed size={16} />, color: "secondary" },
   ];
 
   const getMyLocation = () => {
@@ -100,18 +102,31 @@ const MapPage = () => {
   };
 
   const getCategoryIcon = (category) => {
-    const iconColors = { fontanella: "#0dcaf0", officina: "#ffc107", "ricarica-ebike": "#198754", pericolo: "#dc3545" };
+    const iconColors = {
+      fontanella: "#0dcaf0",
+      officina: "#ffc107",
+      "ricarica-ebike": "#198754",
+      pericolo: "#dc3545",
+      bar: "#fd7e14",
+      alloggio: "#6f42c1",
+    };
+
     const color = iconColors[category] || "#6c757d";
+
     const icons = {
       fontanella:
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"></path></svg>',
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"></path></svg>',
       officina:
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>',
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>',
       "ricarica-ebike":
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>',
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>',
       pericolo:
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>',
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>',
+      bar: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"></path><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"></path><line x1="6" y1="2" x2="6" y2="4"></line><line x1="10" y1="2" x2="10" y2="4"></line><line x1="14" y1="2" x2="14" y2="4"></line></svg>',
+      alloggio:
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"></path><path d="M2 8h18a2 2 0 0 1 2 2v10"></path><path d="M2 17h20"></path><path d="M6 8v9"></path></svg>',
     };
+
     return L.divIcon({
       className: "custom-marker",
       html: `<div style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.3);"><div style="transform: rotate(45deg); color: white; display: flex;">${icons[category] || "📍"}</div></div>`,
@@ -120,7 +135,6 @@ const MapPage = () => {
       popupAnchor: [0, -30],
     });
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setUploading(true);
@@ -573,22 +587,28 @@ const MapPage = () => {
             <p className="text-dark" style={{ lineHeight: "1.6" }}>
               {selectedStop?.description || "Nessuna descrizione aggiuntiva."}
             </p>
-            <Badge
-              bg={
-                selectedStop?.category === "fontanella"
-                  ? "info"
-                  : selectedStop?.category === "officina"
-                    ? "warning"
-                    : selectedStop?.category === "ricarica-ebike"
-                      ? "success"
-                      : selectedStop?.category === "pericolo"
-                        ? "danger"
-                        : "secondary"
-              }
-              className="px-3 py-2 rounded-pill shadow-sm"
+            <div
+              className="d-inline-block px-3 py-2 rounded-pill shadow-sm fw-bold text-white mb-3"
+              style={{
+                fontSize: "0.75rem",
+                backgroundColor:
+                  selectedStop?.category === "fontanella"
+                    ? "#0dcaf0"
+                    : selectedStop?.category === "officina"
+                      ? "#ffc107"
+                      : selectedStop?.category === "ricarica-ebike"
+                        ? "#198754"
+                        : selectedStop?.category === "pericolo"
+                          ? "#dc3545"
+                          : selectedStop?.category === "bar"
+                            ? "#fd7e14"
+                            : selectedStop?.category === "alloggio"
+                              ? "#6f42c1"
+                              : "#6c757d",
+              }}
             >
               {selectedStop?.category ? selectedStop.category.charAt(0).toUpperCase() + selectedStop.category.slice(1).replace("-", " ").toLowerCase() : ""}
-            </Badge>
+            </div>
           </div>
 
           {/* --- 5. AZIONI / NAVIGAZIONE --- */}
@@ -673,6 +693,8 @@ const MapPage = () => {
                 <option value="officina">Officina</option>
                 <option value="ricarica-ebike">Ricarica E-Bike</option>
                 <option value="pericolo">⚠️ Segnala Pericolo</option>
+                <option value="bar">Bar Bike-Friendly</option>
+                <option value="alloggio">B&B / Ostello</option>
               </Form.Select>
             </Form.Group>
 
