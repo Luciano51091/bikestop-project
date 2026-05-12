@@ -10,5 +10,6 @@ router.patch("/:id/status", auth, bikeStopController.updateStatus);
 router.delete("/:id", auth, bikeStopController.deleteStop);
 router.post("/:id/comment", auth, bikeStopController.addComment);
 router.patch("/:id/verify", auth, bikeStopController.rating);
+router.post("/rate/:id", auth, bikeStopController.rateStop);
 
 module.exports = router;

@@ -68,6 +68,15 @@ const bikeStopSchema = new mongoose.Schema(
     ratings: {
       works: { type: Number, default: 0 },
       notWorks: { type: Number, default: 0 },
+      starSum: { type: Number, default: 0 },
+      starCount: { type: Number, default: 0 },
+      averageRating: { type: Number, default: 0 },
+      ratedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    },
+
+    hazardVerifications: {
+      stillThere: { type: Number, default: 0 },
+      resolved: { type: Number, default: 0 },
     },
 
     lastVerified: { type: Date, default: Date.now },

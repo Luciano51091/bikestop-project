@@ -86,7 +86,12 @@ exports.deleteStop = async (req, res) => {
     const stop = await BikeStop.findById(req.params.id);
     if (!stop) return res.status(404).json({ msg: "Punto non trovato" });
 
-    if (stop.author.toString() !== req.user.id) return res.status(401).json({ msg: "Non autorizzato" });
+    const isAuthor = stop.author.toString() === req.user.id;
+    const isHazard = stop.category === "pericolo";
+
+    if (!isAuthor && !isHazard) {
+      return res.status(401).json({ msg: "Non autorizzato a eliminare questo punto" });
+    }
 
     await stop.deleteOne();
     res.json({ msg: "Punto rimosso con successo" });
@@ -186,5 +191,35 @@ exports.getUserStops = async (req, res) => {
   } catch (err) {
     console.error("ERRORE RECUPERO PUNTI UTENTE:", err.message);
     res.status(500).send("Errore nel recupero dei tuoi punti");
+  }
+};
+
+exports.rateStop = async (req, res) => {
+  try {
+    const { rating } = req.body;
+    const stop = await BikeStop.findById(req.params.id);
+
+    if (!stop) return res.status(404).json({ msg: "Punto non trovato" });
+
+    if (stop.ratings.ratedBy.includes(req.user.id)) {
+      return res.status(400).json({ msg: "Hai già dato un voto a questa struttura" });
+    }
+
+    if (!["bar", "alloggio"].includes(stop.category)) {
+      return res.status(400).json({ msg: "Voto non consentito per questa categoria" });
+    }
+
+    stop.ratings.starSum = (stop.ratings.starSum || 0) + Number(rating);
+    stop.ratings.starCount = (stop.ratings.starCount || 0) + 1;
+    stop.ratings.averageRating = stop.ratings.starSum / stop.ratings.starCount;
+
+    stop.ratings.ratedBy.push(req.user.id);
+
+    await stop.save();
+
+    res.json(stop);
+  } catch (err) {
+    console.error("ERRORE RATING:", err.message);
+    res.status(500).json({ msg: "Errore nel salvataggio del voto" });
   }
 };

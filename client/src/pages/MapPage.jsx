@@ -44,6 +44,7 @@ const MapPage = () => {
   const [weather, setWeather] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [hoverRating, setHoverRating] = useState(0);
   const navigate = useNavigate();
 
   const fetchStops = async () => {
@@ -212,14 +213,16 @@ const MapPage = () => {
   };
 
   const deleteStop = async (id) => {
-    if (!window.confirm("Rimuovere?")) return;
+    if (!window.confirm("Confermi che il pericolo è stato rimosso? Il punto verrà eliminato dalla mappa.")) return;
     try {
       const token = localStorage.getItem("token");
       await axios.delete(`http://localhost:5000/api/bikestops/${id}`, { headers: { "x-auth-token": token } });
       setShowDetails(false);
       fetchStops();
+      alert("Segnalazione rimossa con successo!");
     } catch (err) {
-      alert("Errore");
+      console.error(err);
+      alert("Errore durante l'eliminazione. Controlla di essere loggato.");
     }
   };
 
@@ -365,7 +368,47 @@ const MapPage = () => {
     }
   };
 
+  const handleServiceChange = (service, isChecked) => {
+    const currentServices = formData.services || [];
+    if (isChecked) {
+      setFormData({ ...formData, services: [...currentServices, service] });
+    } else {
+      setFormData({
+        ...formData,
+        services: currentServices.filter((s) => s !== service),
+      });
+    }
+  };
+
   const isFavorite = currentUser?.favorites?.some((fav) => (typeof fav === "string" ? fav : fav._id) === selectedStop?._id);
+
+  const renderStars = (rating) => {
+    return (
+      <div className="text-warning">
+        {[...Array(5)].map((_, i) => (
+          <i key={i} className={`bi ${i < rating ? "bi-star-fill" : "bi-star"}`}></i>
+        ))}
+        <span className="ms-2 text-muted small">({rating}/5)</span>
+      </div>
+    );
+  };
+
+  const handleRate = async (stopId, newRating) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await axios.post(`http://localhost:5000/api/bikestops/rate/${stopId}`, { rating: newRating }, { headers: { "x-auth-token": token } });
+
+      setSelectedStop(response.data);
+
+      setStops((prevStops) => prevStops.map((s) => (s._id === stopId ? response.data : s)));
+
+      alert("Grazie per il tuo voto!");
+    } catch (err) {
+      console.error("Errore durante l'invio del voto:", err.response?.data || err.message);
+      alert(err.response?.data?.msg || "Errore nel salvataggio del voto");
+    }
+  };
 
   if (loading)
     return (
@@ -431,19 +474,17 @@ const MapPage = () => {
                       </Button>
                     </>
                   ) : (
-                    // --- LOGICA PER FONTANELLE, RICARICA E OFFICINE ---
+                    // --- LOGICA PER TUTTE LE ALTRE SOSTE ---
                     <>
                       <span className="d-block small fw-bold mb-1">Questa sosta è affidabile?</span>
 
-                      {stop.category === "fontanella" || stop.category === "ricarica-ebike" ? (
-                        <Button variant="outline-success" size="sm" className="w-100 mb-1" onClick={() => handleVerify(stop._id, true)}>
-                          {stop.category === "fontanella" ? "💧 Funziona!" : "⚡ Funziona!"}
-                        </Button>
-                      ) : (
-                        <Button variant="outline-success" size="sm" className="w-100 mb-1" onClick={() => handleVerify(stop._id, true)}>
-                          🔧 Attiva/Aperta
-                        </Button>
-                      )}
+                      <Button variant="outline-success" size="sm" className="w-100 mb-1" onClick={() => handleVerify(stop._id, true)}>
+                        {stop.category === "fontanella" && "💧 Funziona!"}
+                        {stop.category === "ricarica-ebike" && "⚡ Funziona!"}
+                        {stop.category === "officina" && "🔧 Attiva/Aperta"}
+                        {stop.category === "bar" && "☕ Aperto/Disponibile"}
+                        {stop.category === "alloggio" && "🛌 Disponibile/Accogliente"}
+                      </Button>
 
                       <Button variant="outline-danger" size="sm" className="w-100" onClick={() => handleVerify(stop._id, false)}>
                         🚫 Segnala problema
@@ -531,51 +572,127 @@ const MapPage = () => {
           )}
 
           {/* --- 3. WIDGET VERIFICA --- */}
-          <div className="mb-4 p-3 bg-white rounded-4 border shadow-sm text-center">
-            <small className="text-muted d-block mb-1">
-              Ultima verifica: {selectedStop?.lastVerified ? new Date(selectedStop.lastVerified).toLocaleDateString() : "Mai verificato"}
-            </small>
-            <div className="fw-bold text-success mb-2">
-              <span className="me-1">👍</span> {selectedStop?.verifications || 0} ciclisti confermano
+          {["fontanella", "ricarica-ebike"].includes(selectedStop?.category) && (
+            <div className="mb-4 p-3 bg-white rounded-4 border shadow-sm text-center">
+              <small className="text-muted d-block mb-1">
+                Ultima verifica: {selectedStop?.lastVerified ? new Date(selectedStop.lastVerified).toLocaleDateString() : "Mai verificato"}
+              </small>
+              <div className="fw-bold text-success mb-2">
+                <span className="me-1">👍</span> {selectedStop?.verifications || 0} ciclisti confermano
+              </div>
+              <Button variant="success" size="sm" className="rounded-pill w-100 py-2" onClick={() => handleVerify(selectedStop?._id)}>
+                Confermo, funziona!
+              </Button>
             </div>
-            <Button variant="success" size="sm" className="rounded-pill w-100 py-2" onClick={() => handleVerify(selectedStop?._id)}>
-              Confermo, funziona!
-            </Button>
-          </div>
+          )}
 
-          {/* --- SEZIONE STATO (Funzionante / Guasto) --- */}
+          {/* --- SEZIONE STATO --- */}
           <div className="mb-4">
             <h6 className="text-uppercase text-muted small fw-bold mb-3" style={{ letterSpacing: "1px" }}>
-              Stato attuale
+              {selectedStop?.category === "pericolo"
+                ? "Verifica Pericolo"
+                : selectedStop?.category === "bar" || selectedStop?.category === "alloggio"
+                  ? "Valutazione e Stato"
+                  : "Stato attuale"}
             </h6>
-            <div className="d-flex gap-2">
-              <Button
-                variant={selectedStop?.status === "active" ? "success" : "outline-success"}
-                className="flex-fill rounded-pill py-2 fw-bold"
-                style={{ fontSize: "0.85rem" }}
-                onClick={() => updateStatus(selectedStop._id, "active")}
-              >
-                ✅ Funzionante
-              </Button>
-              <Button
-                variant={selectedStop?.status === "broken" ? "danger" : "outline-danger"}
-                className="flex-fill rounded-pill py-2 fw-bold"
-                style={{ fontSize: "0.85rem" }}
-                onClick={() => updateStatus(selectedStop._id, "broken")}
-              >
-                ❌ Guasto
-              </Button>
-            </div>
 
+            {/* --- CASO 1: BAR E ALLOGGI (Stelline Cliccabili + Stato) --- */}
+            {(selectedStop?.category === "bar" || selectedStop?.category === "alloggio") && (
+              <div className="mb-3">
+                <div className="d-flex align-items-center mb-1 p-2 bg-light rounded-3 justify-content-center border" onMouseLeave={() => setHoverRating(0)}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span
+                      key={star}
+                      className="fs-3 mx-1"
+                      style={{
+                        cursor: "pointer",
+                        transition: "transform 0.1s ease",
+
+                        color: star <= (hoverRating || selectedStop?.ratings?.averageRating || 0) ? "#ffc107" : "#dee2e6",
+                      }}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onClick={() => handleRate(selectedStop._id, star)}
+                    >
+                      {star <= (hoverRating || selectedStop?.ratings?.averageRating || 0) ? "★" : "☆"}
+                    </span>
+                  ))}
+
+                  <span className="ms-3 fw-bold text-dark">{(selectedStop?.ratings?.averageRating || 0).toFixed(1)}</span>
+                </div>
+
+                <div className="text-center mb-3">
+                  <small className="text-muted italic">{selectedStop?.ratings?.starCount || 0} recensioni dai ciclisti</small>
+                </div>
+
+                <div className="d-flex gap-2">
+                  <Button
+                    variant="outline-success"
+                    className="flex-fill rounded-pill py-2 fw-bold"
+                    style={{ fontSize: "0.85rem" }}
+                    onClick={() => handleVerify(selectedStop._id, true)}
+                  >
+                    ✅ Aperto/Disp.
+                  </Button>
+                  <Button
+                    variant="outline-danger"
+                    className="flex-fill rounded-pill py-2 fw-bold"
+                    style={{ fontSize: "0.85rem" }}
+                    onClick={() => handleVerify(selectedStop._id, false)}
+                  >
+                    🚫 Segnala Chiuso
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* --- CASO 2: PERICOLO (C'è ancora / Risolto) --- */}
             {selectedStop?.category === "pericolo" && (
-              <Button
-                variant="outline-dark"
-                className="w-100 mt-2 rounded-pill border-dashed"
-                size="sm"
-                onClick={() => updateStatus(selectedStop._id, "active", "risolto")}
-              >
-                🎉 Segnala come risolto / rimosso
-              </Button>
+              <div className="p-3 border border-danger border-opacity-25 rounded-4 bg-danger bg-opacity-10">
+                <p className="small text-center mb-3 fw-bold">Il pericolo è ancora presente?</p>
+                <div className="d-flex gap-2 mb-2">
+                  <Button
+                    variant="danger"
+                    className="flex-fill rounded-pill py-2 shadow-sm"
+                    style={{ fontSize: "0.85rem" }}
+                    onClick={() => handleVerify(selectedStop._id, true)}
+                  >
+                    ⚠️ C'è ancora
+                  </Button>
+                  <Button
+                    variant="success"
+                    className="flex-fill rounded-pill py-2 shadow-sm"
+                    style={{ fontSize: "0.85rem" }}
+                    onClick={() => updateStatus(selectedStop._id, "active", "risolto")}
+                  >
+                    ✅ Risolto
+                  </Button>
+                </div>
+                <div className="text-center small text-muted mt-2">
+                  Conferme attuali: <strong>{selectedStop?.verifications || 0}</strong>
+                </div>
+              </div>
+            )}
+
+            {/* --- CASO 3: STANDARD (Fontanelle, Officine, Ricarica) --- */}
+            {["fontanella", "officina", "ricarica-ebike"].includes(selectedStop?.category) && (
+              <div className="d-flex gap-2">
+                <Button
+                  variant={selectedStop?.status === "active" ? "success" : "outline-success"}
+                  className="flex-fill rounded-pill py-2 fw-bold"
+                  style={{ fontSize: "0.85rem" }}
+                  onClick={() => updateStatus(selectedStop._id, "active")}
+                >
+                  ✅ Attiva / Funzionante
+                </Button>
+                <Button
+                  variant={selectedStop?.status === "broken" ? "danger" : "outline-danger"}
+                  className="flex-fill rounded-pill py-2 fw-bold"
+                  style={{ fontSize: "0.85rem" }}
+                  onClick={() => updateStatus(selectedStop._id, "broken")}
+                >
+                  ❌ Chiusa / Guasta
+                </Button>
+              </div>
             )}
           </div>
 
@@ -610,6 +727,25 @@ const MapPage = () => {
               {selectedStop?.category ? selectedStop.category.charAt(0).toUpperCase() + selectedStop.category.slice(1).replace("-", " ").toLowerCase() : ""}
             </div>
           </div>
+
+          {/* --- SEZIONE SERVIZI --- */}
+          {selectedStop?.services && selectedStop.services.length > 0 && (
+            <div className="mb-4">
+              <h6 className="text-uppercase text-muted small fw-bold mb-2" style={{ letterSpacing: "1px" }}>
+                Servizi inclusi
+              </h6>
+              <div className="d-flex flex-wrap gap-2">
+                {selectedStop.services.map((service) => (
+                  <span key={service} className="badge border text-dark fw-normal bg-light px-2 py-2 rounded-3" style={{ fontSize: "0.75rem" }}>
+                    {service === "parking" && "🚲 Parcheggio Bici"}
+                    {service === "wifi" && "📶 Wi-Fi Libero"}
+                    {service === "tools" && "🪛 Kit Riparazione"}
+                    {service === "water" && "💧 Acqua potabile"}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* --- 5. AZIONI / NAVIGAZIONE --- */}
           <div className="d-grid gap-3 mb-5">
@@ -708,6 +844,41 @@ const MapPage = () => {
             <Form.Group className="mb-3">
               <Form.Label className="small fw-bold">Note / Descrizione</Form.Label>
               <Form.Control as="textarea" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+            </Form.Group>
+
+            {/* --- SERVIZI EXTRA --- */}
+            <Form.Group className="mb-3">
+              <Form.Label className="small fw-bold">Servizi disponibili</Form.Label>
+              <div className="d-flex flex-wrap gap-2">
+                {formData.category === "bar" || formData.category === "alloggio" || formData.category === "officina" ? (
+                  <>
+                    <Form.Check
+                      type="checkbox"
+                      label="🚲 Parcheggio sicuro"
+                      id="parking"
+                      checked={formData.services?.includes("parking")}
+                      onChange={(e) => handleServiceChange("parking", e.target.checked)}
+                    />
+                    <Form.Check
+                      type="checkbox"
+                      label="📶 Wi-Fi"
+                      id="wifi"
+                      checked={formData.services?.includes("wifi")}
+                      onChange={(e) => handleServiceChange("wifi", e.target.checked)}
+                    />
+                  </>
+                ) : null}
+
+                {formData.category === "officina" || formData.category === "ricarica-ebike" ? (
+                  <Form.Check
+                    type="checkbox"
+                    label="🪛 Attrezzi/Pompa"
+                    id="tools"
+                    checked={formData.services?.includes("tools")}
+                    onChange={(e) => handleServiceChange("tools", e.target.checked)}
+                  />
+                ) : null}
+              </div>
             </Form.Group>
 
             <Button variant="primary" type="submit" className="w-100 rounded-pill py-2 shadow" disabled={uploading}>
