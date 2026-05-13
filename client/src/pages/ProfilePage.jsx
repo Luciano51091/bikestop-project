@@ -86,7 +86,6 @@ const ProfilePage = () => {
       </div>
     );
 
-  // Calcolo Badge basato sulle stats che arrivano dal backend
   const stats = user?.stats || { stopsCreated: 0, totalComments: 0, totalVerifications: 0 };
 
   return (
@@ -117,8 +116,8 @@ const ProfilePage = () => {
                 <input id="profile-upload" type="file" hidden onChange={handleImageUpload} />
               </div>
 
-              <h4 className="fw-bold mb-1">{user?.username}</h4>
-              <p className="text-muted small mb-3">{user?.email}</p>
+              <h4 className="fw-bold mb-1 fs-5 text-truncate px-2">{user?.username}</h4>
+              <p className="text-muted small mb-3 text-truncate px-2">{user?.email}</p>
 
               {/* BADGE */}
               <div className="d-flex justify-content-center gap-2 mb-4">
@@ -166,26 +165,32 @@ const ProfilePage = () => {
 
         {/* LATO DESTRO: CONTATORI  */}
         <Col lg={8}>
-          <Row className="mb-4">
-            <Col md={4} className="mb-3">
-              <Card className="border-0 shadow-sm rounded-4 text-center p-3">
-                <MapPin className="mx-auto mb-2 text-primary" size={28} />
-                <h3 className="fw-bold mb-0">{stats.stopsCreated}</h3>
-                <small className="text-muted fw-bold">Punti Creati</small>
+          <Row className="mb-4 gx-2 gy-0">
+            <Col xs={4} className="text-center">
+              <Card className="border-0 shadow-sm rounded-4 p-2 py-3 h-100 justify-content-center">
+                <MapPin className="mx-auto mb-1 text-primary" size={22} />
+                <h4 className="fw-bold mb-0 fs-4">{stats.stopsCreated}</h4>
+                <small className="text-muted fw-bold style-subtext" style={{ fontSize: "0.7rem", textTransform: "uppercase" }}>
+                  Punti
+                </small>
               </Card>
             </Col>
-            <Col md={4} className="mb-3">
-              <Card className="border-0 shadow-sm rounded-4 text-center p-3">
-                <CheckCircle className="mx-auto mb-2 text-success" size={28} />
-                <h3 className="fw-bold mb-0">{stats.totalVerifications}</h3>
-                <small className="text-muted fw-bold">Verifiche</small>
+            <Col xs={4} className="text-center">
+              <Card className="border-0 shadow-sm rounded-4 p-2 py-3 h-100 justify-content-center">
+                <CheckCircle className="mx-auto mb-1 text-success" size={22} />
+                <h4 className="fw-bold mb-0 fs-4">{stats.totalVerifications}</h4>
+                <small className="text-muted fw-bold style-subtext" style={{ fontSize: "0.7rem", textTransform: "uppercase" }}>
+                  Verifiche
+                </small>
               </Card>
             </Col>
-            <Col md={4} className="mb-3">
-              <Card className="border-0 shadow-sm rounded-4 text-center p-3">
-                <MessageSquare className="mx-auto mb-2 text-info" size={28} />
-                <h3 className="fw-bold mb-0">{stats.totalComments}</h3>
-                <small className="text-muted fw-bold">Commenti</small>
+            <Col xs={4} className="text-center">
+              <Card className="border-0 shadow-sm rounded-4 p-2 py-3 h-100 justify-content-center">
+                <MessageSquare className="mx-auto mb-1 text-info" size={22} />
+                <h4 className="fw-bold mb-0 fs-4">{stats.totalComments}</h4>
+                <small className="text-muted fw-bold style-subtext" style={{ fontSize: "0.7rem", textTransform: "uppercase" }}>
+                  Commenti
+                </small>
               </Card>
             </Col>
           </Row>
@@ -199,14 +204,14 @@ const ProfilePage = () => {
             <ListGroup variant="flush">
               {myStops.length > 0 ? (
                 myStops.map((stop) => (
-                  <ListGroup.Item key={stop._id} className="py-3 px-4 d-flex justify-content-between align-items-center">
-                    <div>
-                      <div className="fw-bold">{stop.name}</div>
-                      <small className="text-muted text-capitalize">
+                  <ListGroup.Item key={stop._id} className="py-2.5 px-3 d-flex justify-content-between align-items-center gap-2">
+                    <div className="text-truncate">
+                      <div className="fw-bold text-truncate small">{stop.name}</div>
+                      <small className="text-muted text-capitalize" style={{ fontSize: "0.75rem" }}>
                         {stop.category} • {new Date(stop.createdAt).toLocaleDateString()}
                       </small>
                     </div>
-                    <Badge bg={stop.status === "active" ? "success" : "danger"} className="rounded-pill">
+                    <Badge bg={stop.status === "active" ? "success" : "danger"} className="rounded-pill" style={{ fontSize: "0.7rem", flexShrink: 0 }}>
                       {stop.status === "active" ? "Attivo" : "Guasto"}
                     </Badge>
                   </ListGroup.Item>
@@ -228,13 +233,21 @@ const ProfilePage = () => {
             <ListGroup variant="flush">
               {user?.favorites?.length > 0 ? (
                 user.favorites.map((fav) => (
-                  <ListGroup.Item key={fav._id} className="py-3 px-4 d-flex justify-content-between align-items-center">
-                    <div>
-                      <div className="fw-bold">{fav.name || "Punto senza nome"}</div>
-                      <small className="text-muted text-capitalize">{fav.category}</small>
+                  <ListGroup.Item key={fav._id} className="py-2.5 px-3 d-flex justify-content-between align-items-center gap-2">
+                    <div className="text-truncate">
+                      <div className="fw-bold text-truncate small">{fav.name || "Punto senza nome"}</div>
+                      <small className="text-muted text-capitalize" style={{ fontSize: "0.75rem" }}>
+                        {fav.category}
+                      </small>
                     </div>
-                    <Button variant="outline-primary" size="sm" className="rounded-pill" onClick={() => navigate("/mappa")}>
-                      Vai alla mappa
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      className="rounded-pill py-1 px-2.5"
+                      style={{ fontSize: "0.75rem", flexShrink: 0 }}
+                      onClick={() => navigate("/mappa")}
+                    >
+                      Mappa
                     </Button>
                   </ListGroup.Item>
                 ))

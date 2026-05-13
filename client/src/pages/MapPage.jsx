@@ -418,7 +418,7 @@ const MapPage = () => {
     );
 
   return (
-    <div style={{ position: "relative", height: "calc(100vh - 70px)", width: "100%", overflow: "hidden" }}>
+    <div className="w-100 p-0 m-0" style={{ position: "relative", height: "calc(100vh - 70px)", overflow: "hidden" }}>
       {/* TASTO CANCELLA PERCORSO */}
       {destination && (
         <Button
@@ -510,7 +510,7 @@ const MapPage = () => {
         <MapPin className="text-primary" />
       </Button>
 
-      <Offcanvas show={showDetails} onHide={() => setShowDetails(false)} placement="end" style={{ width: "380px" }}>
+      <Offcanvas show={showDetails} onHide={() => setShowDetails(false)} placement="end" className="w-100 w-md-380" style={{ maxWidth: "100%" }}>
         <Offcanvas.Header closeButton className="border-bottom">
           <Offcanvas.Title className="fw-bold fs-4">{selectedStop?.name}</Offcanvas.Title>
           <Button variant="link" onClick={() => handleToggleFavorite(selectedStop._id)} className="p-0 text-danger">
@@ -888,17 +888,25 @@ const MapPage = () => {
         </Modal.Body>
       </Modal>
 
-      <div className="position-absolute w-100 d-flex justify-content-center" style={{ bottom: "30px", zIndex: 1000 }}>
+      <div
+        className="position-absolute d-flex gap-2 p-2 style-scroll-categories justify-content-md-center w-100"
+        style={{
+          bottom: "20px",
+          left: "0",
+          zIndex: 1000,
+        }}
+      >
         <div className="bg-white p-2 rounded-pill shadow d-flex gap-2 border px-3">
           {categories.map((cat) => (
             <Button
               key={cat.id}
-              variant={activeCategory === cat.id ? cat.color : "light"}
+              variant={activeCategory === cat.id ? cat.color : "white"}
               onClick={() => setActiveCategory(cat.id)}
-              className="rounded-pill px-3 shadow-sm border-0"
-              style={{ fontSize: "0.8rem" }}
+              className={`shadow-sm d-inline-flex align-items-center gap-2 rounded-pill px-3 py-2 border ${
+                activeCategory === cat.id ? "text-white" : "text-dark"
+              }`}
             >
-              {cat.icon} <span className="ms-1 d-none d-md-inline">{cat.label}</span>
+              {cat.icon} <span>{cat.label}</span>
             </Button>
           ))}
         </div>

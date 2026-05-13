@@ -43,3 +43,26 @@
 .comment-section::-webkit-scrollbar-thumb:hover {
   background: #aaa;
 }
+
+.style-scroll-categories {
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+.style-scroll-categories .btn {
+  flex: 0 0 auto;
+}
+.style-scroll-categories::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .style-scroll-categories {
+    overflow-x: visible !important;
+    white-space: normal !important;
+    justify-content: center !important;
+  }
+  .style-scroll-categories .btn {
+    flex: initial !important;
+  }
+}

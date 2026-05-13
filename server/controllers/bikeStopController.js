@@ -127,60 +127,57 @@ exports.addComment = async (req, res) => {
   }
 };
 
-exports.rating = async (req, res) => {
-  try {
-    const stop = await BikeStop.findByIdAndUpdate(req.params.id, { $inc: { verifications: 1 }, lastVerified: Date.now() }, { returnDocument: "after" });
-
-    if (!stop) return res.status(404).json({ msg: "Punto non trovato" });
-
-    const User = require("../models/User");
-    await User.findByIdAndUpdate(req.user.id, {
-      $inc: { "stats.totalVerifications": 1 },
-    });
-
-    stop.verifiedBy.push(req.user.id);
-    await stop.save();
-
-    res.json(stop);
-  } catch (err) {
-    console.error("ERRORE RATING:", err.message);
-    res.status(500).send("Errore nell'aggiornamento della verifica");
-  }
-};
-
 exports.verifyStop = async (req, res) => {
   try {
     const stop = await BikeStop.findById(req.params.id);
     if (!stop) return res.status(404).json({ msg: "Punto non trovato" });
 
     const incomingStatus = req.body.status;
-    const finalStatus = incomingStatus === "broken" || incomingStatus === "guasto" ? "broken" : "active";
+    const finalStatus = incomingStatus === "broken" || incomingStatus === "guasto" || incomingStatus === "closed" ? "broken" : "active";
 
-    if (stop.verifiedBy.includes(req.user.id)) {
-      return res.status(400).json({ msg: "Hai già verificato questo punto" });
+    const hasAlreadyVerified = stop.verifiedBy.includes(req.user.id);
+
+    if (hasAlreadyVerified && stop.status === finalStatus) {
+      return res.status(400).json({ msg: `Hai già segnalato questo punto come ${finalStatus === "active" ? "Aperto/Funzionante" : "Chiuso/Guasto"}` });
     }
 
-    stop.verifiedBy.push(req.user.id);
+    if (!hasAlreadyVerified) {
+      // CASO A: Nuovo utente che vota per la prima volta
+      stop.verifiedBy.push(req.user.id);
+      stop.verifications = (stop.verifications || 0) + 1;
+
+      if (finalStatus === "active") {
+        stop.ratings.works = (stop.ratings.works || 0) + 1;
+      } else {
+        stop.ratings.notWorks = (stop.ratings.notWorks || 0) + 1;
+      }
+
+      // Incrementa le verifiche nel profilo dell'utente (solo la prima volta che interagisce con questo punto)
+      await User.findByIdAndUpdate(req.user.id, {
+        $inc: { "stats.totalVerifications": 1 },
+      });
+    } else {
+      // CASO B: L'utente ha già votato in passato, ma sta CAMBIANDO lo stato (es. da aperto a chiuso)
+      if (finalStatus === "active") {
+        // Passa da chiuso ad aperto
+        stop.ratings.works = (stop.ratings.works || 0) + 1;
+        stop.ratings.notWorks = Math.max(0, (stop.ratings.notWorks || 0) - 1); // Sottrae il voto precedente
+      } else {
+        // Passa da aperto a chiuso
+        stop.ratings.notWorks = (stop.ratings.notWorks || 0) + 1;
+        stop.ratings.works = Math.max(0, (stop.ratings.works || 0) - 1); // Sottrae il voto precedente
+      }
+      // NOTA: Non incrementiamo le stats dell'utente, perché l'ha già fatta in passato questa verifica
+    }
+
     stop.status = finalStatus;
     stop.lastVerified = Date.now();
-    stop.verifications = (stop.verifications || 0) + 1;
-
-    if (finalStatus === "active") {
-      stop.ratings.works = (stop.ratings.works || 0) + 1;
-    } else {
-      stop.ratings.notWorks = (stop.ratings.notWorks || 0) + 1;
-    }
 
     await stop.save();
-
-    await User.findByIdAndUpdate(req.user.id, {
-      $inc: { "stats.totalVerifications": 1 },
-    });
-
     res.json(stop);
   } catch (err) {
-    console.error("ERRORE RATING:", err.message);
-    res.status(500).json({ msg: "Errore validazione database", error: err.message });
+    console.error("ERRORE VERIFY STOP:", err.message);
+    res.status(500).json({ msg: "Errore durante l'aggiornamento dello stato", error: err.message });
   }
 };
 
