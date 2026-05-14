@@ -187,6 +187,7 @@ const MapPage = () => {
         const res = await axios.get("http://localhost:5000/api/auth/me", {
           headers: { "x-auth-token": token },
         });
+        console.log("DATI UTENTE AGGIORNATI DAL SERVER:", res.data.stats);
         setCurrentUser(res.data);
       }
     } catch (err) {
@@ -196,9 +197,23 @@ const MapPage = () => {
 
   const updateStatus = async (id, newStatus, newHazardType = null) => {
     if (newHazardType === "risolto") {
-      await deleteStop(id);
+      if (!window.confirm("Confermi che il pericolo è stato rimosso?")) return;
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await axios.patch(`http://localhost:5000/api/bikestops/${id}/verify`, { status: "broken" }, { headers: { "x-auth-token": token } });
+
+        setShowDetails(false);
+        await refreshUser();
+        fetchStops();
+        alert("Grazie per aver verificato la rimozione del pericolo!");
+      } catch (err) {
+        console.error(err);
+        alert(err.response?.data?.msg || "Errore durante la segnalazione");
+      }
       return;
     }
+
     try {
       const token = localStorage.getItem("token");
       await axios.patch(
@@ -211,7 +226,6 @@ const MapPage = () => {
       alert("Errore");
     }
   };
-
   const deleteStop = async (id) => {
     if (!window.confirm("Confermi che il pericolo è stato rimosso? Il punto verrà eliminato dalla mappa.")) return;
     try {
@@ -298,12 +312,14 @@ const MapPage = () => {
     try {
       const token = localStorage.getItem("token");
 
-      const statusValue = isWorking ? "works" : "broken";
+      const statusValue = isWorking ? "active" : "broken";
 
       const res = await axios.patch(`http://localhost:5000/api/bikestops/${id}/verify`, { status: statusValue }, { headers: { "x-auth-token": token } });
 
       setSelectedStop(res.data);
-
+      if (typeof refreshUser === "function") {
+        await refreshUser();
+      }
       fetchStops();
 
       alert("Grazie per la tua segnalazione!");
@@ -510,7 +526,15 @@ const MapPage = () => {
         <MapPin className="text-primary" />
       </Button>
 
-      <Offcanvas show={showDetails} onHide={() => setShowDetails(false)} placement="end" className="w-100 w-md-380" style={{ maxWidth: "100%" }}>
+      <Offcanvas
+        show={showDetails}
+        onHide={() => setShowDetails(false)}
+        placement="end"
+        style={{
+          width: window.innerWidth < 768 ? "100%" : "380px",
+          maxWidth: "100%",
+        }}
+      >
         <Offcanvas.Header closeButton className="border-bottom">
           <Offcanvas.Title className="fw-bold fs-4">{selectedStop?.name}</Offcanvas.Title>
           <Button variant="link" onClick={() => handleToggleFavorite(selectedStop._id)} className="p-0 text-danger">
@@ -680,7 +704,7 @@ const MapPage = () => {
                   variant={selectedStop?.status === "active" ? "success" : "outline-success"}
                   className="flex-fill rounded-pill py-2 fw-bold"
                   style={{ fontSize: "0.85rem" }}
-                  onClick={() => updateStatus(selectedStop._id, "active")}
+                  onClick={() => handleVerify(selectedStop._id, true)}
                 >
                   ✅ Attiva / Funzionante
                 </Button>
@@ -688,7 +712,7 @@ const MapPage = () => {
                   variant={selectedStop?.status === "broken" ? "danger" : "outline-danger"}
                   className="flex-fill rounded-pill py-2 fw-bold"
                   style={{ fontSize: "0.85rem" }}
-                  onClick={() => updateStatus(selectedStop._id, "broken")}
+                  onClick={() => handleVerify(selectedStop._id, false)}
                 >
                   ❌ Chiusa / Guasta
                 </Button>

@@ -21,9 +21,11 @@ const ProfilePage = () => {
         return;
       }
 
-      const resUser = await axios.get("http://localhost:5000/api/auth/me", {
+      const resUser = await axios.get(`http://localhost:5000/api/auth/me?t=${Date.now()}`, {
         headers: { "x-auth-token": token },
       });
+
+      console.log("DATI RICEVUTI DALLA PROFILE PAGE:", resUser.data.stats);
 
       setUser(resUser.data);
       setNewUsername(resUser.data.username);
@@ -41,7 +43,13 @@ const ProfilePage = () => {
   };
 
   useEffect(() => {
+    setLoading(true);
     fetchProfileData();
+
+    window.addEventListener("focus", fetchProfileData);
+    return () => {
+      window.removeEventListener("focus", fetchProfileData);
+    };
   }, []);
 
   const handleImageUpload = async (e) => {
