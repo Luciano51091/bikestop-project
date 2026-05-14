@@ -2,6 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const BikeStop = require("../models/BikeStop");
+const mongoose = require("mongoose");
 
 exports.register = async (req, res) => {
   try {
@@ -49,22 +50,36 @@ exports.getMe = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId).select("-password").populate("favorites");
+
+    // Conteggio punti creati
     const stopsCreated = await BikeStop.countDocuments({ author: userId });
 
+    // Conteggio commenti
     const stopsWithMyComments = await BikeStop.find({ "comments.user": userId });
     let totalComments = 0;
     stopsWithMyComments.forEach((stop) => {
       totalComments += stop.comments.filter((c) => c.user && c.user.toString() === userId.toString()).length;
     });
 
-    const totalVerifications = await BikeStop.countDocuments({ verifiedBy: userId });
+    // !!! CORREZIONE: Convertiamo l'id in ObjectId per garantire che MongoDB trovi la corrispondenza nell'array
+    let convertedId = userId;
+    if (mongoose.Types.ObjectId.isValid(userId)) {
+      convertedId = new mongoose.Types.ObjectId(userId);
+    }
+
+    // Cerchiamo i documenti dove l'array 'verifiedBy' contiene il nostro ID (stringa o ObjectId)
+    const totalVerifications = await BikeStop.countDocuments({
+      $or: [{ verifiedBy: userId }, { verifiedBy: convertedId }],
+    });
+
+    console.log(`[BACKEND getMe] Conteggio reale verifiche per utente ${userId}:`, totalVerifications);
 
     res.json({
       ...user._doc,
       stats: {
         stopsCreated,
         totalComments,
-        totalVerifications,
+        totalVerifications, // Ora questo manderà il numero reale!
       },
     });
   } catch (err) {

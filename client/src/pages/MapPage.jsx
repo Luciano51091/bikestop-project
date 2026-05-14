@@ -482,10 +482,10 @@ const MapPage = () => {
                   {stop.category === "pericolo" ? (
                     // --- LOGICA PER I PERICOLI ---
                     <>
-                      <Button variant="outline-danger" size="sm" className="w-100 mb-1" onClick={() => handleVerify(stop._id, false)}>
+                      <Button variant="outline-danger" size="sm" className="w-100 mb-1" onClick={() => handleVerify(stop._id, true)}>
                         🚫 Conferma Pericolo
                       </Button>
-                      <Button variant="outline-dark" size="sm" className="w-100" onClick={() => updateStatus(stop._id, "active", "risolto")}>
+                      <Button variant="outline-dark" size="sm" className="w-100" onClick={() => handleVerify(stop._id, false)}>
                         ✅ Risolto/Rimosso
                       </Button>
                     </>
@@ -604,7 +604,7 @@ const MapPage = () => {
               <div className="fw-bold text-success mb-2">
                 <span className="me-1">👍</span> {selectedStop?.verifications || 0} ciclisti confermano
               </div>
-              <Button variant="success" size="sm" className="rounded-pill w-100 py-2" onClick={() => handleVerify(selectedStop?._id)}>
+              <Button variant="success" size="sm" className="rounded-pill w-100 py-2" onClick={() => handleVerify(selectedStop?._id, true)}>
                 Confermo, funziona!
               </Button>
             </div>

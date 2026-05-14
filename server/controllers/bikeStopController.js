@@ -135,35 +135,37 @@ exports.verifyStop = async (req, res) => {
     const stop = await BikeStop.findById(req.params.id);
     if (!stop) return res.status(404).json({ msg: "Punto non trovato" });
 
-    // 1. Normalizzazione dello stato in arrivo dal frontend
     const incomingStatus = req.body.status;
-    const finalStatus =
-      incomingStatus === "broken" || incomingStatus === "guasto" || incomingStatus === "closed" || incomingStatus === "resolved" ? "broken" : "active";
+    let finalStatus;
 
-    // 2. Normalizzazione dello stato attuale nel Database
+    if (stop.category === "pericolo") {
+      if (incomingStatus === "resolved" || incomingStatus === "risolto" || incomingStatus === "broken") {
+        finalStatus = "broken";
+      } else {
+        finalStatus = "active";
+      }
+    } else {
+      finalStatus =
+        incomingStatus === "broken" || incomingStatus === "guasto" || incomingStatus === "closed" || incomingStatus === "resolved" ? "broken" : "active";
+    }
+
     const currentDbStatus = stop.status === "broken" || stop.status === "guasto" || stop.status === "closed" ? "broken" : "active";
 
-    // Controlliamo se l'utente ha già inserito il suo ID in questo punto in passato
     const hasAlreadyVerified = stop.verifiedBy.some((id) => id.toString() === userId.toString());
 
-    if (hasAlreadyVerified) {
-      // -------------------------------------------------------------
-      // CASO B: L'UTENTE HA GIÀ INTERAGITO IN PASSATO
-      // -------------------------------------------------------------
+    // Flag per capire se l'utente ha diritto al punto nelle statistiche
+    let incrementUserStats = false;
 
-      // BLOCCO SPAM: Se lo stato attuale del DB è già uguale a quello che l'utente sta inviando,
-      // significa che sta premendo lo stesso tasto inutilmente. Lo blocchiamo.
+    if (hasAlreadyVerified) {
+      // Se l'utente clicca lo stesso tasto con lo stesso stato attuale, lo blocchiamo (Evita lo spam del click compulsivo)
       if (currentDbStatus === finalStatus) {
         return res.status(400).json({
-          msg: `Hai già segnalato questo punto come ${finalStatus === "active" ? "Attivo/Funzionante" : "Chiuso/Guasto"}`,
+          msg: `Hai già espresso questo feedback per questo punto.`,
         });
       }
 
-      // CAMBIO DI STATO: L'utente sta cambiando lo stato (es. da attivo a guasto o viceversa).
-      // È un'informazione preziosa sul campo, quindi merita il punto di verifica!
-      console.log(`Utente ${userId} cambia lo stato del punto da ${currentDbStatus} a ${finalStatus}`);
-
-      // Aggiorniamo i contatori dei feedback spostando il voto
+      // Se cambia lo stato (es. da active a broken), ha fatto una vera segnalazione sul campo!
+      console.log(`Utente ${userId} cambia il suo feedback da ${currentDbStatus} a ${finalStatus}`);
       if (finalStatus === "active") {
         stop.ratings.works = (stop.ratings.works || 0) + 1;
         stop.ratings.notWorks = Math.max(0, (stop.ratings.notWorks || 0) - 1);
@@ -172,17 +174,11 @@ exports.verifyStop = async (req, res) => {
         stop.ratings.works = Math.max(0, (stop.ratings.works || 0) - 1);
       }
 
-      // Incrementiamo il profilo dell'utente
-      await User.findByIdAndUpdate(userId, {
-        $inc: { "stats.totalVerifications": 1 },
-      });
+      // !!! SBLOCCO: Diamo il punto anche se cambia uno stato precedente
+      incrementUserStats = true;
     } else {
-      // -------------------------------------------------------------
-      // CASO A: PRIMA INTERAZIONE ASSOLUTA DI QUESTO UTENTE
-      // -------------------------------------------------------------
+      // Prima interazione assoluta dell'utente su questo punto
       console.log(`Prima verifica in assoluto per l'utente ${userId} su questo punto`);
-
-      // Essendo un ID pulito, lo inseriamo nell'array senza violare lo schema Mongoose
       stop.verifiedBy.push(userId);
       stop.verifications = (stop.verifications || 0) + 1;
 
@@ -192,26 +188,28 @@ exports.verifyStop = async (req, res) => {
         stop.ratings.notWorks = (stop.ratings.notWorks || 0) + 1;
       }
 
-      // Incrementiamo il profilo dell'utente
+      // Nuova verifica = Punto meritato
+      incrementUserStats = true;
+    }
+
+    // Se l'azione è valida, aggiorniamo il contatore dell'utente nel DB
+    if (incrementUserStats) {
       await User.findByIdAndUpdate(userId, {
         $inc: { "stats.totalVerifications": 1 },
       });
+      console.log(`Contatore totalVerifications incrementato per l'utente ${userId}`);
     }
 
-    // 3. Salvataggio dello stato globale e chiusura
     stop.status = finalStatus;
     stop.lastVerified = Date.now();
 
     const savedStop = await stop.save();
-    console.log("=== VERIFICA SALVATA CON SUCCESSO ===", savedStop.ratings);
-
     res.json(savedStop);
   } catch (err) {
     console.error("ERRORE VERIFY STOP:", err.message);
     res.status(500).json({ msg: "Errore durante l'aggiornamento dello stato", error: err.message });
   }
 };
-
 exports.getUserStops = async (req, res) => {
   try {
     const stops = await BikeStop.find({ author: req.user.id });
