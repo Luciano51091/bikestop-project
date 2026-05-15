@@ -1,18 +1,19 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Spinner, Modal, Button, Form, Image, Offcanvas, Badge } from "react-bootstrap";
+import { Spinner, Modal, Button, Form, Image, Offcanvas, Badge, CloseButton } from "react-bootstrap";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from "react-leaflet";
 import axios from "axios";
-import { MapPin, Droplets, Wrench, Zap, AlertTriangle, Camera, MessageSquare, Navigation, X, Heart, Coffee, Bed } from "lucide-react";
+import { MapPin, Droplets, Wrench, Zap, AlertTriangle, Camera, MessageSquare, Navigation, X, Heart, Coffee, Bed, Send, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import RoutingControl from "../components/RoutingControl";
 import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
+import { useLocation } from "react-router";
 
 const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dbql5hkcb/image/upload";
 const UPLOAD_PRESET = "bikestop_preset";
 
-const MapController = ({ stops, userLocation }) => {
+const MapController = ({ stops, userLocation, location, setSelectedStop, setShowDetails }) => {
   const map = useMap();
   useEffect(() => {
     if (userLocation) map.flyTo([userLocation.lat, userLocation.lng], 15, { animate: true });
@@ -23,7 +24,31 @@ const MapController = ({ stops, userLocation }) => {
       const bounds = L.latLngBounds(stops.map((s) => [s.location.coordinates[1], s.location.coordinates[0]]));
       map.fitBounds(bounds, { padding: [80, 80], maxZoom: 15, animate: true });
     }
-  }, [stops, map]);
+
+    if (!location.state?.focusStopId && stops && stops.length > 0) {
+      const bounds = L.latLngBounds(stops.map((s) => [s.location.coordinates[1], s.location.coordinates[0]]));
+      map.fitBounds(bounds, { padding: [80, 80], maxZoom: 15, animate: true });
+    }
+  }, [stops, map, location.state]);
+
+  // --- NUOVO: LOGICA DI FOCUS DAL PROFILO ---
+  useEffect(() => {
+    if (location.state?.focusStopId && stops.length > 0) {
+      const targetStop = stops.find((s) => s._id === location.state.focusStopId);
+      if (targetStop) {
+        // Centra la mappa (Usa l'ordine [lat, lng] di Leaflet)
+        map.flyTo([targetStop.location.coordinates[1], targetStop.location.coordinates[0]], 16, { animate: true });
+
+        // Apri dettagli
+        setSelectedStop(targetStop);
+        setShowDetails(true);
+
+        // Pulisci lo stato per non ripetere il flyTo al refresh
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, stops, map, setSelectedStop, setShowDetails]);
+
   return null;
 };
 
@@ -45,6 +70,7 @@ const MapPage = () => {
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [hoverRating, setHoverRating] = useState(0);
+  const location = useLocation();
   const navigate = useNavigate();
 
   const fetchStops = async () => {
@@ -451,7 +477,13 @@ const MapPage = () => {
       <MapContainer center={[41.9028, 12.4964]} zoom={12} style={{ height: "100%", width: "100%" }}>
         <TileLayer url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png" />
         <MapEvents />
-        <MapController stops={filteredStops} userLocation={userLocation} />
+        <MapController
+          stops={filteredStops}
+          userLocation={userLocation}
+          location={location}
+          setSelectedStop={setSelectedStop}
+          setShowDetails={setShowDetails}
+        />
 
         {userLocation && destination && (
           <RoutingControl key={`route-${destination[0]}-${destination[1]}`} userLocation={userLocation} destination={destination} />
@@ -530,208 +562,58 @@ const MapPage = () => {
         show={showDetails}
         onHide={() => setShowDetails(false)}
         placement="end"
+        className="border-0 shadow-lg"
         style={{
-          width: window.innerWidth < 768 ? "100%" : "380px",
+          width: window.innerWidth < 768 ? "100%" : "400px",
           maxWidth: "100%",
+          borderRadius: window.innerWidth < 768 ? "0" : "20px 0 0 20px",
         }}
       >
-        <Offcanvas.Header closeButton className="border-bottom">
-          <Offcanvas.Title className="fw-bold fs-4">{selectedStop?.name}</Offcanvas.Title>
-          <Button variant="link" onClick={() => handleToggleFavorite(selectedStop._id)} className="p-0 text-danger">
-            <Heart size={24} color={isFavorite ? "#ff4d4d" : "#6c757d"} fill={isFavorite ? "#ff4d4d" : "none"} style={{ transition: "all 0.3s ease" }} />
-          </Button>
-        </Offcanvas.Header>
-
-        <Offcanvas.Body className="px-4 py-3">
-          {/* --- 1. SEZIONE METEO --- */}
-          <div className="weather-container">
-            {weatherLoading ? (
-              <div className="text-center py-4 mb-3 bg-light rounded-4 border border-dashed">
-                <Spinner animation="border" size="sm" variant="info" />
+        {/* Header con Immagine e Controlli */}
+        <div className="position-relative">
+          {selectedStop?.imageUrl ? (
+            <div style={{ height: "240px", overflow: "hidden" }}>
+              <Image src={selectedStop.imageUrl} className="w-100 h-100" style={{ objectFit: "cover" }} />
+              <div
+                className="position-absolute bottom-0 start-0 w-100 p-3"
+                style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.8))", color: "white" }}
+              >
+                <h3 className="fw-bold m-0 text-shadow">{selectedStop?.name}</h3>
               </div>
-            ) : (
-              weather && (
-                <div
-                  className="weather-widget d-flex align-items-center justify-content-between p-3 mb-4 rounded-4 shadow-sm"
-                  style={{
-                    background: "linear-gradient(135deg, #00b4db 0%, #0083b0 100%)",
-                    color: "white",
-                  }}
-                >
-                  <div className="d-flex align-items-center">
-                    <img
-                      src={`https://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png`}
-                      alt="meteo"
-                      style={{ width: "50px", filter: "drop-shadow(0px 0px 4px rgba(255,255,255,0.5))" }}
-                    />
-                    <div className="ms-3">
-                      <div className="fw-bold h3 mb-0">{Math.round(weather.main.temp)}°C</div>
-                      <div className="small text-capitalize" style={{ opacity: 0.9 }}>
-                        {weather.weather[0].description}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-end border-start border-white border-opacity-25 ps-3">
-                    <div className="small fw-bold text-uppercase" style={{ fontSize: "0.65rem", opacity: 0.8 }}>
-                      Vento
-                    </div>
-                    <div className="h6 mb-0">{Math.round(weather.wind.speed * 3.6)} km/h</div>
-                  </div>
-                </div>
-              )
-            )}
-          </div>
-
-          {/* --- 2. IMMAGINE --- */}
-          {selectedStop?.imageUrl && (
-            <div className="mb-4 text-center">
-              <Image
-                src={selectedStop.imageUrl}
-                fluid
-                rounded
-                className="shadow-sm w-100"
-                style={{ height: "220px", objectFit: "cover", borderRadius: "15px" }}
-              />
+            </div>
+          ) : (
+            <div className="p-3 pt-5 border-bottom bg-light">
+              <h3 className="fw-bold m-0">{selectedStop?.name}</h3>
             </div>
           )}
 
-          {/* --- 3. WIDGET VERIFICA --- */}
-          {["fontanella", "ricarica-ebike"].includes(selectedStop?.category) && (
-            <div className="mb-4 p-3 bg-white rounded-4 border shadow-sm text-center">
-              <small className="text-muted d-block mb-1">
-                Ultima verifica: {selectedStop?.lastVerified ? new Date(selectedStop.lastVerified).toLocaleDateString() : "Mai verificato"}
-              </small>
-              <div className="fw-bold text-success mb-2">
-                <span className="me-1">👍</span> {selectedStop?.verifications || 0} ciclisti confermano
-              </div>
-              <Button variant="success" size="sm" className="rounded-pill w-100 py-2" onClick={() => handleVerify(selectedStop?._id, true)}>
-                Confermo, funziona!
-              </Button>
-            </div>
-          )}
-
-          {/* --- SEZIONE STATO --- */}
-          <div className="mb-4">
-            <h6 className="text-uppercase text-muted small fw-bold mb-3" style={{ letterSpacing: "1px" }}>
-              {selectedStop?.category === "pericolo"
-                ? "Verifica Pericolo"
-                : selectedStop?.category === "bar" || selectedStop?.category === "alloggio"
-                  ? "Valutazione e Stato"
-                  : "Stato attuale"}
-            </h6>
-
-            {/* --- CASO 1: BAR E ALLOGGI (Stelline Cliccabili + Stato) --- */}
-            {(selectedStop?.category === "bar" || selectedStop?.category === "alloggio") && (
-              <div className="mb-3">
-                <div className="d-flex align-items-center mb-1 p-2 bg-light rounded-3 justify-content-center border" onMouseLeave={() => setHoverRating(0)}>
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <span
-                      key={star}
-                      className="fs-3 mx-1"
-                      style={{
-                        cursor: "pointer",
-                        transition: "transform 0.1s ease",
-
-                        color: star <= (hoverRating || selectedStop?.ratings?.averageRating || 0) ? "#ffc107" : "#dee2e6",
-                      }}
-                      onMouseEnter={() => setHoverRating(star)}
-                      onClick={() => handleRate(selectedStop._id, star)}
-                    >
-                      {star <= (hoverRating || selectedStop?.ratings?.averageRating || 0) ? "★" : "☆"}
-                    </span>
-                  ))}
-
-                  <span className="ms-3 fw-bold text-dark">{(selectedStop?.ratings?.averageRating || 0).toFixed(1)}</span>
-                </div>
-
-                <div className="text-center mb-3">
-                  <small className="text-muted italic">{selectedStop?.ratings?.starCount || 0} recensioni dai ciclisti</small>
-                </div>
-
-                <div className="d-flex gap-2">
-                  <Button
-                    variant="outline-success"
-                    className="flex-fill rounded-pill py-2 fw-bold"
-                    style={{ fontSize: "0.85rem" }}
-                    onClick={() => handleVerify(selectedStop._id, true)}
-                  >
-                    ✅ Aperto/Disp.
-                  </Button>
-                  <Button
-                    variant="outline-danger"
-                    className="flex-fill rounded-pill py-2 fw-bold"
-                    style={{ fontSize: "0.85rem" }}
-                    onClick={() => handleVerify(selectedStop._id, false)}
-                  >
-                    🚫 Segnala Chiuso
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* --- CASO 2: PERICOLO (C'è ancora / Risolto) --- */}
-            {selectedStop?.category === "pericolo" && (
-              <div className="p-3 border border-danger border-opacity-25 rounded-4 bg-danger bg-opacity-10">
-                <p className="small text-center mb-3 fw-bold">Il pericolo è ancora presente?</p>
-                <div className="d-flex gap-2 mb-2">
-                  <Button
-                    variant="danger"
-                    className="flex-fill rounded-pill py-2 shadow-sm"
-                    style={{ fontSize: "0.85rem" }}
-                    onClick={() => handleVerify(selectedStop._id, true)}
-                  >
-                    ⚠️ C'è ancora
-                  </Button>
-                  <Button
-                    variant="success"
-                    className="flex-fill rounded-pill py-2 shadow-sm"
-                    style={{ fontSize: "0.85rem" }}
-                    onClick={() => updateStatus(selectedStop._id, "active", "risolto")}
-                  >
-                    ✅ Risolto
-                  </Button>
-                </div>
-                <div className="text-center small text-muted mt-2">
-                  Conferme attuali: <strong>{selectedStop?.verifications || 0}</strong>
-                </div>
-              </div>
-            )}
-
-            {/* --- CASO 3: STANDARD (Fontanelle, Officine, Ricarica) --- */}
-            {["fontanella", "officina", "ricarica-ebike"].includes(selectedStop?.category) && (
-              <div className="d-flex gap-2">
-                <Button
-                  variant={selectedStop?.status === "active" ? "success" : "outline-success"}
-                  className="flex-fill rounded-pill py-2 fw-bold"
-                  style={{ fontSize: "0.85rem" }}
-                  onClick={() => handleVerify(selectedStop._id, true)}
-                >
-                  ✅ Attiva / Funzionante
-                </Button>
-                <Button
-                  variant={selectedStop?.status === "broken" ? "danger" : "outline-danger"}
-                  className="flex-fill rounded-pill py-2 fw-bold"
-                  style={{ fontSize: "0.85rem" }}
-                  onClick={() => handleVerify(selectedStop._id, false)}
-                >
-                  ❌ Chiusa / Guasta
-                </Button>
-              </div>
-            )}
+          {/* Controlli superiori (Cuore e X) */}
+          <div className="position-absolute top-0 end-0 p-3 d-flex gap-2" style={{ zIndex: 10 }}>
+            <Button
+              variant="white"
+              className="rounded-circle shadow-sm p-2 d-flex align-items-center justify-content-center border-0"
+              style={{ width: "40px", height: "40px", backgroundColor: "white" }}
+              onClick={() => handleToggleFavorite(selectedStop._id)}
+            >
+              <Heart size={22} color={isFavorite ? "#ff4d4d" : "#6c757d"} fill={isFavorite ? "#ff4d4d" : "none"} />
+            </Button>
+            <CloseButton
+              onClick={() => setShowDetails(false)}
+              // Style aggiunto per rimuovere l'ombra blu/grigia di Bootstrap al click
+              style={{ boxShadow: "none", outline: "none" }}
+              className={`rounded-circle p-2 border-0 shadow-none ${selectedStop?.imageUrl ? "bg-white opacity-75" : ""}`}
+            />
           </div>
+        </div>
 
-          {/* --- 4. DESCRIZIONE --- */}
-          <div className="mb-4">
-            <h6 className="text-uppercase text-muted small fw-bold mb-2" style={{ letterSpacing: "1px" }}>
-              Descrizione
-            </h6>
-            <p className="text-dark" style={{ lineHeight: "1.6" }}>
-              {selectedStop?.description || "Nessuna descrizione aggiuntiva."}
-            </p>
+        <Offcanvas.Body className="px-4 py-4">
+          {/* BADGE CATEGORIA - Ora è qui fuori, visibile SEMPRE */}
+          <div className="mb-3">
             <div
-              className="d-inline-block px-3 py-2 rounded-pill shadow-sm fw-bold text-white mb-3"
+              className="d-inline-block px-3 py-1 rounded-pill fw-bold text-white shadow-sm"
               style={{
                 fontSize: "0.75rem",
+                letterSpacing: "0.5px",
                 backgroundColor:
                   selectedStop?.category === "fontanella"
                     ? "#0dcaf0"
@@ -748,87 +630,172 @@ const MapPage = () => {
                               : "#6c757d",
               }}
             >
-              {selectedStop?.category ? selectedStop.category.charAt(0).toUpperCase() + selectedStop.category.slice(1).replace("-", " ").toLowerCase() : ""}
+              {selectedStop?.category?.toUpperCase().replace("-", " ")}
             </div>
           </div>
 
-          {/* --- SEZIONE SERVIZI --- */}
-          {selectedStop?.services && selectedStop.services.length > 0 && (
+          {/* --- METEO --- */}
+          {!weatherLoading && weather && (
+            <div className="d-flex align-items-center justify-content-between p-3 mb-4 rounded-4 bg-light border border-opacity-10">
+              <div className="d-flex align-items-center">
+                <img src={`https://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png`} alt="meteo" style={{ width: "45px" }} />
+                <div className="ms-2">
+                  <span className="h4 fw-bold mb-0">{Math.round(weather.main.temp)}°C</span>
+                  <div className="small text-muted text-capitalize">{weather.weather[0].description}</div>
+                </div>
+              </div>
+              <div className="text-end border-start ps-3 small text-muted">
+                <div className="text-uppercase fw-bold" style={{ fontSize: "0.6rem" }}>
+                  Vento
+                </div>
+                <div className="fw-bold text-dark">{Math.round(weather.wind.speed * 3.6)} km/h</div>
+              </div>
+            </div>
+          )}
+
+          {/* --- AZIONI NAVIGAZIONE --- */}
+          <div className="d-flex gap-2 mb-4">
+            <Button
+              variant="primary"
+              className="flex-grow-1 rounded-pill py-2 shadow-sm d-flex align-items-center justify-content-center gap-2 fw-bold"
+              onClick={() => handleCalculateRoute(selectedStop.location.coordinates)}
+            >
+              <Navigation size={18} /> Anteprima Percorso
+            </Button>
+            <Button variant="outline-dark" className="rounded-pill px-4 border-2" onClick={() => handleOpenGoogleMaps(selectedStop.location.coordinates)}>
+              <img src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Google_Maps_icon_%282020%29.svg" alt="GMaps" style={{ width: "18px" }} />
+            </Button>
+          </div>
+
+          {/* --- DESCRIZIONE --- */}
+          <div className="mb-4">
+            <h6 className="text-uppercase text-muted small fw-bold mb-2">Informazioni</h6>
+            <p className="text-secondary mb-0" style={{ fontSize: "0.9rem", lineHeight: "1.6" }}>
+              {selectedStop?.description || "Nessun dettaglio aggiuntivo fornito."}
+            </p>
+          </div>
+
+          {/* --- LOGICA PULSANTI E RATING --- */}
+          <div className="p-3 rounded-4 bg-white border shadow-sm mb-4">
+            <h6 className="text-uppercase text-muted small fw-bold mb-3 text-center">Stato della Tappa</h6>
+
+            {/* BAR, ALLOGGI E OFFICINE (Aperto/Chiuso + Rating) */}
+            {(selectedStop?.category === "bar" || selectedStop?.category === "alloggio" || selectedStop?.category === "officina") && (
+              <>
+                <div className="text-center mb-3 p-2 bg-light rounded-3">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span
+                      key={star}
+                      className="fs-3 mx-1"
+                      style={{ cursor: "pointer", color: star <= (hoverRating || selectedStop?.ratings?.averageRating || 0) ? "#ffc107" : "#dee2e6" }}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      onClick={() => handleRate(selectedStop._id, star)}
+                    >
+                      ★
+                    </span>
+                  ))}
+                  <div className="small text-muted mt-1 fw-bold">
+                    {(selectedStop?.ratings?.averageRating || 0).toFixed(1)} / 5 ({selectedStop?.ratings?.starCount || 0} voti)
+                  </div>
+                </div>
+                <div className="d-flex gap-2">
+                  <Button variant="outline-success" className="flex-fill rounded-pill py-2 fw-bold" onClick={() => handleVerify(selectedStop._id, true)}>
+                    ✅ Aperto
+                  </Button>
+                  <Button variant="outline-danger" className="flex-fill rounded-pill py-2 fw-bold" onClick={() => handleVerify(selectedStop._id, false)}>
+                    🚫 Chiuso
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {/* PERICOLO */}
+            {selectedStop?.category === "pericolo" && (
+              <div className="d-flex gap-2">
+                <Button variant="danger" className="flex-fill rounded-pill py-2 fw-bold" onClick={() => handleVerify(selectedStop._id, true)}>
+                  ⚠️ C'è ancora
+                </Button>
+                <Button variant="success" className="flex-fill rounded-pill py-2 fw-bold" onClick={() => updateStatus(selectedStop._id, "active", "risolto")}>
+                  ✅ Risolto
+                </Button>
+              </div>
+            )}
+
+            {/* FONTANELLE E RICARICA (Funzionante/Guasto) */}
+            {["fontanella", "ricarica-ebike"].includes(selectedStop?.category) && (
+              <div className="d-flex gap-2">
+                <Button
+                  variant={selectedStop?.status === "active" ? "success" : "outline-success"}
+                  className="flex-fill rounded-pill py-2 fw-bold"
+                  onClick={() => handleVerify(selectedStop._id, true)}
+                >
+                  ✅ Funzionante
+                </Button>
+                <Button
+                  variant={selectedStop?.status === "broken" ? "danger" : "outline-danger"}
+                  className="flex-fill rounded-pill py-2 fw-bold"
+                  onClick={() => handleVerify(selectedStop._id, false)}
+                >
+                  ❌ Guasto
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* --- SERVIZI --- */}
+          {selectedStop?.services?.length > 0 && (
             <div className="mb-4">
-              <h6 className="text-uppercase text-muted small fw-bold mb-2" style={{ letterSpacing: "1px" }}>
-                Servizi inclusi
-              </h6>
+              <h6 className="text-uppercase text-muted small fw-bold mb-2">Servizi disponibili</h6>
               <div className="d-flex flex-wrap gap-2">
                 {selectedStop.services.map((service) => (
-                  <span key={service} className="badge border text-dark fw-normal bg-light px-2 py-2 rounded-3" style={{ fontSize: "0.75rem" }}>
-                    {service === "parking" && "🚲 Parcheggio Bici"}
-                    {service === "wifi" && "📶 Wi-Fi Libero"}
+                  <Badge key={service} pill bg="white" text="dark" className="border px-3 py-2 fw-normal shadow-sm">
+                    {service === "parking" && "🚲 Parcheggio"}
+                    {service === "wifi" && "📶 Wi-Fi"}
                     {service === "tools" && "🪛 Kit Riparazione"}
-                    {service === "water" && "💧 Acqua potabile"}
-                  </span>
+                    {service === "water" && "💧 Acqua"}
+                  </Badge>
                 ))}
               </div>
             </div>
           )}
 
-          {/* --- 5. AZIONI / NAVIGAZIONE --- */}
-          <div className="d-grid gap-3 mb-5">
-            <Button
-              variant="primary"
-              className="rounded-pill py-2 d-flex align-items-center justify-content-center gap-2 shadow-sm"
-              onClick={() => handleCalculateRoute(selectedStop.location.coordinates)}
-            >
-              <Navigation size={18} /> Anteprima Percorso
-            </Button>
-
-            <Button
-              variant="outline-dark"
-              className="rounded-pill py-2 d-flex align-items-center justify-content-center gap-2"
-              onClick={() => handleOpenGoogleMaps(selectedStop.location.coordinates)}
-            >
-              <img src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Google_Maps_icon_%282020%29.svg" alt="GMaps" style={{ width: "18px" }} />
-              Google Maps
-            </Button>
-          </div>
-
-          <hr className="my-4 opacity-25" />
-
-          {/* --- 6. COMMENTI --- */}
-          <div className="d-flex align-items-center gap-2 mb-3">
-            <MessageSquare size={20} className="text-primary" />
-            <h6 className="mb-0 fw-bold">Commenti ({selectedStop?.comments?.length || 0})</h6>
-          </div>
-
-          <div className="comment-section mb-4" style={{ maxHeight: "300px", overflowY: "auto" }}>
-            {selectedStop?.comments?.length > 0 ? (
-              selectedStop.comments.map((c) => (
-                <div key={c._id || c.date} className="mb-3 p-3 bg-light rounded-4 shadow-sm border-start border-primary border-3">
-                  <div className="d-flex justify-content-between small mb-1">
-                    <span className="fw-bold">{c.userName}</span>
-                    <span className="text-muted">{new Date(c.date).toLocaleDateString()}</span>
+          {/* --- COMMENTI --- */}
+          <div className="mt-5 mb-3">
+            <h6 className="fw-bold mb-3 d-flex align-items-center">
+              <MessageSquare size={18} className="me-2 text-primary" />
+              Esperienze ({selectedStop?.comments?.length || 0})
+            </h6>
+            <div className="comment-list mb-3" style={{ maxHeight: "200px", overflowY: "auto" }}>
+              {selectedStop?.comments?.map((c, idx) => (
+                <div key={idx} className="mb-2 p-3 bg-light rounded-4 border-0 shadow-sm">
+                  <div className="d-flex justify-content-between small fw-bold mb-1">
+                    <span className="text-primary">{c.userName}</span>
+                    <span className="text-muted" style={{ fontSize: "0.7rem" }}>
+                      {new Date(c.date).toLocaleDateString()}
+                    </span>
                   </div>
-                  <div className="small text-dark">{c.text}</div>
+                  <div className="small text-secondary">{c.text}</div>
                 </div>
-              ))
-            ) : (
-              <p className="text-muted small text-center py-3">Ancora nessun commento. Sii il primo!</p>
-            )}
-          </div>
+              ))}
+            </div>
 
-          {/* --- 7. INPUT COMMENTO --- */}
-          <Form.Group className="mt-3">
-            <Form.Control
-              as="textarea"
-              rows={2}
-              placeholder="Scrivi un commento..."
-              className="mb-2 rounded-3"
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-            />
-            <Button variant="outline-primary" className="w-100 rounded-pill" onClick={() => handleAddComment(selectedStop._id)}>
-              Invia Commento
-            </Button>
-          </Form.Group>
+            <div className="d-flex gap-2 bg-light p-2 rounded-pill border">
+              <Form.Control
+                placeholder="Aggiungi un commento..."
+                className="border-0 bg-transparent shadow-none"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+              />
+              <Button
+                variant="primary"
+                className="rounded-circle p-2 d-flex align-items-center justify-content-center"
+                onClick={() => handleAddComment(selectedStop._id)}
+              >
+                <Send size={16} />
+              </Button>
+            </div>
+          </div>
         </Offcanvas.Body>
       </Offcanvas>
 

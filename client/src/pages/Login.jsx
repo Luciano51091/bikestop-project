@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Form, Button, Card, Alert } from "react-bootstrap";
+import { Form, Button, Card, Alert, Container, Row, Col, InputGroup } from "react-bootstrap";
+import { FaEnvelope, FaLock, FaArrowRight } from "react-icons/fa";
 import axios from "axios";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 
 const Login = ({ onLoginSuccess }) => {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -32,35 +33,96 @@ const Login = ({ onLoginSuccess }) => {
 
       navigate("/mappa");
     } catch (err) {
-      setError(err.response?.data?.msg || "Errore durante il login");
+      setError(err.response?.data?.msg || "Credenziali non valide");
       console.error("Errore Login:", err);
     }
   };
 
   return (
-    <div className="d-flex justify-content-center mt-5">
-      <Card style={{ width: "400px" }} className="p-4 shadow border-0">
-        <Card.Body>
-          <h2 className="text-center mb-4 fw-bold">Bentornato</h2>
-          {error && <Alert variant="danger">{error}</Alert>}
-          <Form onSubmit={onSubmit}>
-            <Form.Group className="mb-3">
-              <Form.Label>Email</Form.Label>
-              <Form.Control type="email" name="email" placeholder="Inserisci la tua email" value={email} onChange={onChange} required />
-            </Form.Group>
+    <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: "85vh" }}>
+      <Row className="w-100 justify-content-center">
+        <Col md={6} lg={4}>
+          <Card className="border-0 shadow-lg" style={{ borderRadius: "15px", overflow: "hidden" }}>
+            {/* Barra superiore decorativa blu/azzurra per differenziarlo dal Register verde */}
+            <div
+              style={{
+                backgroundColor: "#0d6efd",
+                height: "10px",
+                width: "100%",
+              }}
+            />
+            <Card.Body className="p-5">
+              <div className="text-center mb-4">
+                <h2 className="fw-bold text-dark">Bentornato</h2>
+                <p className="text-muted small">Accedi per gestire i tuoi percorsi</p>
+              </div>
 
-            <Form.Group className="mb-4">
-              <Form.Label>Password</Form.Label>
-              <Form.Control type="password" name="password" placeholder="********" value={password} onChange={onChange} required />
-            </Form.Group>
+              {error && (
+                <Alert variant="danger" className="py-2 text-center small">
+                  {error}
+                </Alert>
+              )}
 
-            <Button variant="primary" type="submit" className="w-100 py-2 fw-bold">
-              Accedi
-            </Button>
-          </Form>
-        </Card.Body>
-      </Card>
-    </div>
+              <Form onSubmit={onSubmit}>
+                <Form.Group className="mb-3">
+                  <Form.Label className="small fw-semibold text-muted">Email</Form.Label>
+                  <InputGroup>
+                    <InputGroup.Text className="bg-light border-end-0">
+                      <FaEnvelope className="text-muted" />
+                    </InputGroup.Text>
+                    <Form.Control
+                      className="bg-light border-start-0"
+                      type="email"
+                      name="email"
+                      placeholder="la tua email"
+                      value={email}
+                      onChange={onChange}
+                      required
+                    />
+                  </InputGroup>
+                </Form.Group>
+
+                <Form.Group className="mb-4">
+                  <Form.Label className="small fw-semibold text-muted">Password</Form.Label>
+                  <InputGroup>
+                    <InputGroup.Text className="bg-light border-end-0">
+                      <FaLock className="text-muted" />
+                    </InputGroup.Text>
+                    <Form.Control
+                      className="bg-light border-start-0"
+                      type="password"
+                      name="password"
+                      placeholder="********"
+                      value={password}
+                      onChange={onChange}
+                      required
+                    />
+                  </InputGroup>
+                </Form.Group>
+
+                <Button
+                  variant="primary"
+                  type="submit"
+                  className="w-100 py-2 fw-bold shadow-sm d-flex align-items-center justify-content-center"
+                  style={{ borderRadius: "8px", gap: "10px" }}
+                >
+                  ACCEDI <FaArrowRight size={14} />
+                </Button>
+              </Form>
+
+              <div className="text-center mt-4">
+                <p className="small text-muted">
+                  Non hai ancora un account?{" "}
+                  <Link to="/register" className="text-primary fw-bold text-decoration-none">
+                    Registrati
+                  </Link>
+                </p>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    </Container>
   );
 };
 

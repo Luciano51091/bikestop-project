@@ -3,6 +3,149 @@
   height: 70vh;
 }
 
+/* --- HERO STYLE --- */
+.hero-section {
+  min-height: 80vh;
+  background: #1a1a1a;
+  background-image:
+    linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(44, 62, 80, 0.8) 100%),
+    url("https://images.unsplash.com/photo-1471506480208-8a93a6863481?q=80&w=2070&auto=format&fit=crop"); /* Immagine a tema bici */
+  background-size: cover;
+  background-position: center;
+  border-radius: 40px 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.text-primary-gradient {
+  background: linear-gradient(90deg, #2ecc71, #27ae60);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+/* --- BUTTONS --- */
+.btn-modern {
+  border-radius: 14px;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-modern:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(46, 204, 113, 0.3) !important;
+}
+
+.btn-modern-outline {
+  border-radius: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+/* --- FEATURE CARDS --- */
+.feature-card {
+  border-radius: 24px !important;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05) !important;
+}
+
+.icon-box {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+}
+
+/* Colori chiari per i box icone */
+.bg-primary-light {
+  background-color: rgba(13, 110, 253, 0.1);
+}
+.bg-success-light {
+  background-color: rgba(46, 204, 113, 0.1);
+}
+.bg-warning-light {
+  background-color: rgba(255, 193, 7, 0.1);
+}
+
+/* Spaziature strette per titoli grandi */
+.tracking-tight {
+  letter-spacing: -2px;
+}
+
+/* --- STATISTIC --- */
+.stat-item {
+  padding: 1rem;
+}
+
+.stat-item h2 {
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums; /* Mantiene i numeri allineati se dovessero animarsi */
+}
+
+/* Effetto per far risaltare i numeri */
+.text-primary-gradient {
+  background: linear-gradient(90deg, #2ecc71, #27ae60);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+/* Ottimizzazione Mobile: su schermi piccoli riduciamo leggermente la dimensione */
+@media (max-width: 576px) {
+  .stat-item h2 {
+    font-size: 2rem; /* Più leggibile su smartphone */
+  }
+  .stat-item p {
+    font-size: 0.65rem;
+  }
+}
+
+/* --- FINAL CTA --- */
+.rounded-5 {
+  border-radius: 32px !important;
+}
+
+/* Effetto focus sul bottone della CTA finale */
+.bg-dark .btn-primary:hover {
+  background-color: #27ae60 !important;
+  border-color: #27ae60 !important;
+  transform: scale(1.05);
+}
+
+/* --- FOOTER --- */
+footer {
+  background-color: #ffffff;
+}
+
+footer strong {
+  color: var(--secondary-color);
+}
+
+/* Transizione fluida per il cambio pagina */
+.home-page {
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .offcanvas-body {
   scroll-behavior: smooth;
 }
