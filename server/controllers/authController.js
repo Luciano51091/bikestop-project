@@ -131,7 +131,7 @@ exports.updateProfile = async (req, res) => {
 const handleUpdate = async () => {
   try {
     const token = localStorage.getItem("token");
-    const res = await axios.put("http://localhost:5000/api/auth/update", { username: newUsername }, { headers: { "x-auth-token": token } });
+    const res = await axios.put("https://bikestop-backend.onrender.com/api/auth/update", { username: newUsername }, { headers: { "x-auth-token": token } });
     setCurrentUser(res.data);
     alert("Profilo aggiornato!");
   } catch (err) {

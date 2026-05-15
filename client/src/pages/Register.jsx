@@ -21,7 +21,7 @@ const Register = () => {
   const onSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/auth/register", formData);
+      await axios.post("https://bikestop-backend.onrender.com/api/auth/register", formData);
       navigate("/login");
     } catch (err) {
       setError(err.response?.data?.msg || "Errore durante la registrazione");
