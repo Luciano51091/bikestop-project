@@ -9,7 +9,7 @@ const Home = () => {
   return (
     <div className="home-page">
       {/* HERO SECTION */}
-      <div className="hero-section text-white d-flex align-items-center mb-5">
+      <div className="hero-section text-white d-flex align-items-center mb-5 mt-5">
         <Container className="position-relative" style={{ zIndex: 2 }}>
           <Row className="justify-content-center">
             <Col lg={8} className="text-center">

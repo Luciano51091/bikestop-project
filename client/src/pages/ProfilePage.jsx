@@ -11,6 +11,9 @@ const ProfilePage = () => {
   const [uploading, setUploading] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [newUsername, setNewUsername] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [modalError, setModalError] = useState("");
   const navigate = useNavigate();
 
   const fetchProfileData = async () => {
@@ -29,6 +32,7 @@ const ProfilePage = () => {
 
       setUser(resUser.data);
       setNewUsername(resUser.data.username);
+      setNewEmail(resUser.data.email);
 
       const resStops = await axios.get("http://localhost:5000/api/bikestops/user/mystops", {
         headers: { "x-auth-token": token },
@@ -74,18 +78,51 @@ const ProfilePage = () => {
     }
   };
 
-  const handleUpdateUsername = async (e) => {
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
+    setModalError("");
+
+    const updatePayload = {
+      username: newUsername,
+      email: newEmail,
+    };
+
+    if (newPassword.trim() !== "") {
+      if (newPassword.length < 6) {
+        setModalError("La nuova password deve contenere almeno 6 caratteri");
+        return;
+      }
+      updatePayload.password = newPassword;
+    }
+
     try {
       const token = localStorage.getItem("token");
-      await axios.put("http://localhost:5000/api/auth/update", { username: newUsername }, { headers: { "x-auth-token": token } });
+      await axios.put("http://localhost:5000/api/auth/update", updatePayload, {
+        headers: { "x-auth-token": token },
+      });
+
       setShowEditModal(false);
+      setNewPassword(""); // Pulisce lo stato della password per sicurezza
       fetchProfileData();
-      alert("Username aggiornato!");
+      alert("Profilo aggiornato con successo!");
     } catch (err) {
-      alert("Errore durante l'aggiornamento");
+      console.error(err);
+      setModalError(err.response?.data?.msg || "Errore durante l'aggiornamento del profilo");
     }
   };
+
+  // const handleUpdateUsername = async (e) => {
+  //   e.preventDefault();
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     await axios.put("http://localhost:5000/api/auth/update", { username: newUsername }, { headers: { "x-auth-token": token } });
+  //     setShowEditModal(false);
+  //     fetchProfileData();
+  //     alert("Username aggiornato!");
+  //   } catch (err) {
+  //     alert("Errore durante l'aggiornamento");
+  //   }
+  // };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -111,7 +148,7 @@ const ProfilePage = () => {
             <div
               style={{
                 height: "120px",
-                background: "linear-gradient(45deg, #4158D0 0%, #C850C0 46%, #FFCC70 100%)",
+                background: "linear-gradient(45deg, #095e18 0%, #57765b 46%, #85ff7060 100%)",
               }}
             ></div>
 
@@ -167,25 +204,6 @@ const ProfilePage = () => {
               </div>
             </Card.Body>
           </Card>
-
-          {/* Obiettivi (Versione minimal) */}
-          <Card className="border-0 shadow-sm rounded-4 p-3 mt-4">
-            <h6 className="fw-bold text-uppercase small text-muted mb-3"> Obiettivi</h6>
-            <div className="d-flex justify-content-between text-center px-2">
-              <div className={`p-3 rounded-4 ${stats.stopsCreated > 0 ? "bg-warning-subtle" : "bg-light"}`} style={{ width: "32%" }}>
-                <span className="fs-3">📍</span>
-                <div className="small fw-bold mt-1">Creator</div>
-              </div>
-              <div className={`p-3 rounded-4 ${stats.totalVerifications >= 5 ? "bg-success-subtle" : "bg-light"}`} style={{ width: "32%" }}>
-                <span className="fs-3">🏅</span>
-                <div className="small fw-bold mt-1">Elite</div>
-              </div>
-              <div className={`p-3 rounded-4 ${stats.totalComments >= 5 ? "bg-info-subtle" : "bg-light"}`} style={{ width: "32%" }}>
-                <span className="fs-3">💬</span>
-                <div className="small fw-bold mt-1">Social</div>
-              </div>
-            </div>
-          </Card>
         </Col>
 
         {/* COLONNA DESTRA */}
@@ -224,17 +242,37 @@ const ProfilePage = () => {
       </Row>
 
       <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Modifica Profilo</Modal.Title>
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="fw-bold">Modifica Credenziali</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          <Form onSubmit={handleUpdateUsername}>
+        <Modal.Body className="pt-3">
+          {modalError && (
+            <Alert variant="danger" className="py-2 small text-center">
+              {modalError}
+            </Alert>
+          )}
+
+          <Form onSubmit={handleUpdateProfile}>
             <Form.Group className="mb-3">
-              <Form.Label>Nuovo Username</Form.Label>
-              <Form.Control type="text" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} required />
+              <Form.Label className="small fw-semibold text-muted">Username</Form.Label>
+              <Form.Control type="text" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
             </Form.Group>
-            <Button variant="primary" type="submit" className="w-100 rounded-pill">
-              Salva
+
+            <Form.Group className="mb-3">
+              <Form.Label className="small fw-semibold text-muted">Indirizzo Email</Form.Label>
+              <Form.Control type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+            </Form.Group>
+
+            <Form.Group className="mb-4">
+              <Form.Label className="small fw-semibold text-muted">Nuova Password</Form.Label>
+              <Form.Control type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+              <Form.Text className="text-muted" style={{ fontSize: "0.75rem" }}>
+                La password deve contenere almeno 6 caratteri.
+              </Form.Text>
+            </Form.Group>
+
+            <Button variant="primary" type="submit" className="w-100 rounded-pill fw-bold py-2 shadow-sm">
+              Salva Modifiche
             </Button>
           </Form>
         </Modal.Body>

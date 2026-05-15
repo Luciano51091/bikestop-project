@@ -90,21 +90,44 @@ exports.getMe = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { profileImage, username } = req.body;
+    const { profileImage, username, email, password } = req.body;
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: "Utente non trovato" });
+    }
+
     const updateData = {};
 
     if (profileImage) updateData.profileImage = profileImage;
     if (username) updateData.username = username;
 
-    const user = await User.findByIdAndUpdate(req.user.id, { $set: updateData }, { new: true }).select("-password");
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ email });
+      if (emailExists) {
+        return res.status(400).json({ msg: "Questa email è già associata a un altro account" });
+      }
+      updateData.email = email;
+    }
 
-    res.json(user);
+    if (password) {
+      if (typeof password !== "string" || password.length < 6) {
+        return res.status(400).json({ msg: "La password deve contenere almeno 6 caratteri" });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      updateData.password = await bcrypt.hash(password, salt);
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, { $set: updateData }, { new: true, runValidators: true }).select("-password");
+
+    res.json(updatedUser);
   } catch (err) {
-    console.error(err.message);
+    console.error("ERRORE AGGIORNAMENTO PROFILO:", err.message);
     res.status(500).send("Errore nel server");
   }
 };
-
 const handleUpdate = async () => {
   try {
     const token = localStorage.getItem("token");

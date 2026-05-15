@@ -231,7 +231,7 @@ exports.rateStop = async (req, res) => {
       return res.status(400).json({ msg: "Hai già dato un voto a questa struttura" });
     }
 
-    if (!["bar", "alloggio"].includes(stop.category)) {
+    if (!["bar", "alloggio", "officina"].includes(stop.category)) {
       return res.status(400).json({ msg: "Voto non consentito per questa categoria" });
     }
 
