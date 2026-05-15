@@ -1,0 +1,93 @@
+# 🚴‍♂️ BikeStop Project
+
+BikeStop è un'applicazione web completa (MERN Stack) dedicata alla community dei ciclisti. L'obiettivo della piattaforma è mappare, condividere e recensire punti di interesse fondamentali per chi si sposta in bicicletta, come fontanelle d'acqua potabile, ciclo-officine, stazioni di ricarica per e-bike e segnalazioni di potenziali pericoli stradali.
+
+🌍 **Link all'applicazione live:** [BikeStop Web App](https://bikestop-project.vercel.app/)
+
+---
+
+## 🚀 Funzionalità Principali
+
+- **Mappa Interattiva:** Visualizzazione geospaziale dei punti di interesse basata su coordinate reali.
+- **Gestione CRUD dei Punti:** Gli utenti registrati possono aggiungere nuovi punti sulla mappa, modificarli o rimuoverli.
+- **Sistema di Recensioni:** Possibilità di lasciare una valutazione in stelle (1-5) e un commento testuale per ogni punto di sosta.
+- **Autenticazione Sicura:** Registrazione e Login utenti con hashing delle password e gestione delle sessioni tramite JSON Web Tokens (JWT).
+- **Profilo Utente:** Area personale in cui l'utente può gestire i propri dati e monitorare i contributi lasciati alla community.
+
+---
+
+## 🛠️ Tech Stack
+
+L'applicazione è stata sviluppata separando nettamente l'architettura Frontend e Backend (Disaccoppiata):
+
+### Frontend
+
+- **React.js** + **Vite** (Fast production build)
+- **React Leaflet** (Gestione e rendering della mappa interattiva)
+- **Axios** (Gestione delle richieste HTTP verso il backend)
+- **CSS** (Styling moderno e responsive)
+
+### Backend
+
+- **Node.js** & **Express.js** (Sviluppo dell'architettura API RESTful)
+- **MongoDB** & **Mongoose** (Database NoSQL con supporto alle query geospaziali `2dsphere`)
+- **JSON Web Token (JWT)** (Autenticazione e protezione delle rotte private)
+- **Cors** (Configurazione dei permessi di condivisione delle risorse tra domini diversi)
+
+---
+
+## 📦 Architettura del Deploy
+
+Per garantire la massima stabilità e scalabilità della piattaforma, i servizi sono stati distribuiti su infrastrutture cloud dedicate:
+
+1. **Database:** Ospitato in cloud su **MongoDB Atlas** (Cluster M0).
+2. **Backend API:** Distribuito su **Render** (Web Service in Node.js), collegato in modo sicuro al database.
+3. **Frontend Client:** Distribuito su **Vercel**, ottimizzato per le performance di React e collegato agli endpoint di Render tramite variabili d'ambiente.
+
+---
+
+## 💻 Installazione Locale
+
+Se desideri clonare il progetto ed eseguirlo sul tuo computer:
+
+1. Clonare il repository
+
+```bash
+git clone [https://github.com/Luciano51091/bikestop-project.git](https://github.com/Luciano51091/bikestop-project.git)
+cd bikestop-project
+
+2. Configurazione Backend
+Entra nella cartella del backend, installa le dipendenze e crea un file .env:
+
+cd server
+npm install
+
+Crea un file .env inserendo le tue credenziali:
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_super_secret_key
+
+Avvia il server di sviluppo:
+npm run dev
+
+3. Configurazione Frontend
+In un nuovo terminale, entra nella cartella del frontend, installa le dipendenze e avvia il client:
+
+cd client
+npm install
+npm run dev
+
+
+L'applicazione sarà accessibile localmente all'indirizzo http://localhost:5173.
+
+
+
+🔮 Sviluppi Futuri (Roadmap)
+L'architettura attuale è predisposta per accogliere importanti aggiornamenti già pianificati:
+
+Importazione Massiva Open Data: Integrazione dei dataset globali di OpenStreetMap tramite Overpass API per popolare istantaneamente la mappa con migliaia di fontanelle e officine esistenti.
+
+Filtri Avanzati: Ricerca dei punti sulla mappa in base al raggio di distanza (es. "Trova fontanelle entro 2km da me").
+
+Modalità Offline: Salvataggio della mappa in cache per permetterne l'uso ai ciclisti anche in zone montane senza copertura di rete.
+```
