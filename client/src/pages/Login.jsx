@@ -42,39 +42,54 @@ const Login = ({ onLoginSuccess }) => {
     }
   };
 
-  const loginConGoogleCustom = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        console.log("Risposta Google:", tokenResponse);
+  // FUNZIONE DEFINITIVA: Genera il link di reindirizzamento OAuth ufficiale
+  const handleGoogleRedirectLogin = () => {
+    const clientId = "215645011601-eiqnstdc4enb9eeh2kql8ov0uku2sogl.apps.googleusercontent.com";
 
-        if (tokenResponse?.credential) {
-          const tokenDecodificato = jwtDecode(tokenResponse.credential);
-          console.log("Dati utente decodificati:", tokenDecodificato);
+    // Rileva automaticamente se sei in locale o online su Vercel
+    const redirectUri = window.location.hostname === "localhost" ? "http://localhost:5173/login" : "https://bikestop-project.vercel.app/login";
 
-          const res = await API.post("/auth/google", {
-            email: tokenDecodificato.email,
-            name: tokenDecodificato.name,
-            googleId: tokenDecodificato.sub,
-            avatar: tokenDecodificato.picture,
-            token: tokenResponse.credential,
-          });
+    const googleAuthUrl =
+      `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${clientId}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&response_type=token` + // Ci restituisce direttamente l'access_token nell'URL al ritorno
+      `&scope=${encodeURIComponent("openid email profile")}` +
+      `&prompt=select_account`; // Forza Google a chiedere QUALE account usare (niente box automatico!)
 
-          localStorage.setItem("token", res.data.token);
-          window.location.href = "/";
-        } else {
-          const res = await API.post("/auth/google", {
-            token: tokenResponse.access_token,
-          });
-          localStorage.setItem("token", res.data.token);
-          window.location.href = "/";
+    // Reindirizza la pagina corrente a Google
+    window.location.href = googleAuthUrl;
+  };
+
+  // Cattura l'access_token dall'URL quando Google ti rimanda sul tuo sito
+  useEffect(() => {
+    const catturaTokenDaUrl = async () => {
+      const hash = window.location.hash;
+      if (hash) {
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get("access_token");
+
+        if (accessToken) {
+          try {
+            // Mandiamo il token al tuo backend per fare il login
+            const res = await API.post("/auth/google", { token: accessToken });
+            localStorage.setItem("token", res.data.token);
+
+            // Pulisce l'URL cancellando il token visibile per sicurezza
+            window.history.replaceState({}, document.title, window.location.pathname);
+
+            if (onLoginSuccess) onLoginSuccess();
+            navigate("/mappa");
+          } catch (err) {
+            console.error("Errore durante il login sul backend:", err);
+            setError("Autenticazione con Google fallita sul server.");
+          }
         }
-      } catch (error) {
-        console.error("Errore durante il login con Google sul backend:", error);
-        alert("Accesso con Google fallito. Riprova.");
       }
-    },
-    onError: () => console.log("Login Fallito con Google"),
-  });
+    };
+
+    catturaTokenDaUrl();
+  }, [navigate, onLoginSuccess]);
   return (
     <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: "85vh" }}>
       <Row className="w-100 justify-content-center">
