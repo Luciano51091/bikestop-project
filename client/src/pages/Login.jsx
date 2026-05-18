@@ -42,19 +42,30 @@ const Login = ({ onLoginSuccess }) => {
   };
 
   const loginConGoogleCustom = useGoogleLogin({
-    flow: "auth-code",
-    onSuccess: async (codeResponse) => {
+    onSuccess: async (tokenResponse) => {
       try {
-        console.log("Codice di autorizzazione Google ricevuto:", codeResponse);
+        console.log("Token Google ottenuto:", tokenResponse);
+
+        const userInfoRes = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+
+        const datiUtenteGoogle = userInfoRes.data;
+        console.log("Dati utente prelevati da Google:", datiUtenteGoogle);
 
         const res = await API.post("/auth/google", {
-          token: codeResponse.code,
+          email: datiUtenteGoogle.email,
+          name: datiUtenteGoogle.name,
+          googleId: datiUtenteGoogle.sub,
+          avatar: datiUtenteGoogle.picture,
+
+          token: tokenResponse.access_token,
         });
 
         localStorage.setItem("token", res.data.token);
         window.location.href = "/";
       } catch (error) {
-        console.error("Errore durante il login con Google sul backend:", error);
+        console.error("Errore durante il login con Google:", error);
         alert("Accesso con Google fallito. Riprova.");
       }
     },
