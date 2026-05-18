@@ -215,3 +215,8 @@ footer strong {
   display: none !important;
   visibility: hidden !important;
 }
+
+.google-btn-container iframe {
+  width: 100% !important;
+  margin: 0 auto !important;
+}
