@@ -130,22 +130,23 @@ const Login = ({ onLoginSuccess }) => {
                   ACCEDI <FaArrowRight size={14} />
                 </Button>
 
+                {/* Contenitore ottimizzato per la larghezza al 100% */}
                 <div
-                  className="google-btn-container mt-3"
+                  className="google-btn-wrapper mt-3 shadow-sm"
                   style={{
+                    borderRadius: "8px",
+                    overflow: "hidden",
                     width: "100%",
                     display: "flex",
                     justifyContent: "center",
-                    borderRadius: "8px",
-                    overflow: "hidden", // Taglia gli angoli dell'iframe di Google per seguire gli 8px di raggio
                   }}
                 >
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
                     onError={handleGoogleError}
                     text="signin_with"
-                    shape="square" // "square" combinato con il contenitore sopra permette di controllare i bordi tramite CSS
-                    width="340px" // 👈 Modifica questo valore in pixel (es. 340px, 360px o 100%) per farlo combaciare al millimetro con la larghezza del tasto Bootstrap sopra
+                    shape="square"
+                    width="100%" // Spinge l'estensione al massimo consentito dalla card
                     useOneTap={false}
                   />
                 </div>
