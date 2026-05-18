@@ -135,7 +135,7 @@ const Login = ({ onLoginSuccess }) => {
                 </Button>
 
                 <div className="google-btn-wrapper mt-3">
-                  <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} text="signin_with" shape="square" width="100%" />
+                  <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} text="signin_with" shape="square" width="100%" useOneTap={false} />
                 </div>
               </Form>
 
