@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Form, Button, Card, Alert, Container, Row, Col, InputGroup } from "react-bootstrap";
 import { FaEnvelope, FaLock, FaArrowRight } from "react-icons/fa";
-import { GoogleLogin } from "@react-oauth/google";
+import { FcGoogle } from "react-icons/fc";
+import { useGoogleLogin } from "@react-oauth/google";
 import axios from "axios";
 import { useNavigate, Link } from "react-router";
 import API from "../api/api.js";
@@ -40,28 +41,26 @@ const Login = ({ onLoginSuccess }) => {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      const googleToken = credentialResponse.credential;
+  const loginConGoogleCustom = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        // Nota: useGoogleLogin restituisce un "access_token".
+        // Se il tuo backend aspetta un ID Token (credential), questo metodo usa il flusso OAuth2 standard.
+        console.log("Risposta Google ottenuta:", tokenResponse);
 
-      console.log("Token di Google ricevuto:", googleToken);
+        const res = await API.post("/auth/google", {
+          token: tokenResponse.access_token, // Passiamo l'access token al backend
+        });
 
-      const res = await API.post("/auth/google", {
-        token: googleToken,
-      });
-
-      localStorage.setItem("token", res.data.token);
-
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Errore durante il login con Google sul backend:", error);
-      alert("Accesso con Google fallito. Riprova.");
-    }
-  };
-
-  const handleGoogleError = () => {
-    console.log("Login Fallito con Google");
-  };
+        localStorage.setItem("token", res.data.token);
+        window.location.href = "/";
+      } catch (error) {
+        console.error("Errore durante il login con Google sul backend:", error);
+        alert("Accesso con Google fallito. Riprova.");
+      }
+    },
+    onError: () => console.log("Login Fallito con Google"),
+  });
 
   return (
     <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: "85vh" }}>
@@ -134,9 +133,16 @@ const Login = ({ onLoginSuccess }) => {
                   ACCEDI <FaArrowRight size={14} />
                 </Button>
 
-                <div className="google-btn-wrapper mt-3 shadow-sm" style={{ borderRadius: "8px", overflow: "hidden", width: "100%" }}>
-                  <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} text="signin_with" shape="square" width="100%" useOneTap={false} />
-                </div>
+                {/* 2. NUOVO PULSANTE REALE HTML: Identico, personalizzabile e stabile online */}
+                <Button
+                  variant="light"
+                  type="button"
+                  onClick={() => loginConGoogleCustom()}
+                  className="w-100 mt-3 py-2 fw-bold shadow-sm d-flex align-items-center justify-content-center border"
+                  style={{ borderRadius: "8px", gap: "10px", backgroundColor: "#fff", color: "#757575" }}
+                >
+                  <FcGoogle size={20} /> Accedi con Google
+                </Button>
               </Form>
 
               <div className="text-center mt-4">
