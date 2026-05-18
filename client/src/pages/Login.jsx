@@ -130,7 +130,7 @@ const Login = ({ onLoginSuccess }) => {
                   ACCEDI <FaArrowRight size={14} />
                 </Button>
 
-                <div className="google-btn-wrapper mt-3 shadow-sm" style={{ borderRadius: "8px", overflow: "hidden", width: "100%" }}>
+                <div className="google-btn-wrapper mt-3 shadow-sm">
                   <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} text="signin_with" shape="square" width="100%" useOneTap={false} />
                 </div>
               </Form>
