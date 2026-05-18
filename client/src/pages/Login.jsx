@@ -3,6 +3,7 @@ import { Form, Button, Card, Alert, Container, Row, Col, InputGroup } from "reac
 import { FaEnvelope, FaLock, FaArrowRight } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { useGoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 import { useNavigate, Link } from "react-router";
 import API from "../api/api.js";
@@ -44,34 +45,36 @@ const Login = ({ onLoginSuccess }) => {
   const loginConGoogleCustom = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        console.log("Token Google ottenuto:", tokenResponse);
+        console.log("Risposta Google:", tokenResponse);
 
-        const userInfoRes = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        });
+        if (tokenResponse?.credential) {
+          const tokenDecodificato = jwtDecode(tokenResponse.credential);
+          console.log("Dati utente decodificati:", tokenDecodificato);
 
-        const datiUtenteGoogle = userInfoRes.data;
-        console.log("Dati utente prelevati da Google:", datiUtenteGoogle);
+          const res = await API.post("/auth/google", {
+            email: tokenDecodificato.email,
+            name: tokenDecodificato.name,
+            googleId: tokenDecodificato.sub,
+            avatar: tokenDecodificato.picture,
+            token: tokenResponse.credential,
+          });
 
-        const res = await API.post("/auth/google", {
-          email: datiUtenteGoogle.email,
-          name: datiUtenteGoogle.name,
-          googleId: datiUtenteGoogle.sub,
-          avatar: datiUtenteGoogle.picture,
-
-          token: tokenResponse.access_token,
-        });
-
-        localStorage.setItem("token", res.data.token);
-        window.location.href = "/";
+          localStorage.setItem("token", res.data.token);
+          window.location.href = "/";
+        } else {
+          const res = await API.post("/auth/google", {
+            token: tokenResponse.access_token,
+          });
+          localStorage.setItem("token", res.data.token);
+          window.location.href = "/";
+        }
       } catch (error) {
-        console.error("Errore durante il login con Google:", error);
+        console.error("Errore durante il login con Google sul backend:", error);
         alert("Accesso con Google fallito. Riprova.");
       }
     },
     onError: () => console.log("Login Fallito con Google"),
   });
-
   return (
     <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: "85vh" }}>
       <Row className="w-100 justify-content-center">
