@@ -209,3 +209,9 @@ footer strong {
     flex: initial !important;
   }
 }
+
+#google_gsi_iframe_id,
+.g_id_onload {
+  display: none !important;
+  visibility: hidden !important;
+}
