@@ -1,20 +1,35 @@
 import React, { useEffect, useState } from "react";
 import { Form, Button, Card, Alert, Container, Row, Col, InputGroup } from "react-bootstrap";
 import { FaEnvelope, FaLock, FaArrowRight } from "react-icons/fa";
-import { GoogleLogin } from "@react-oauth/google";
-import { useNavigate, Link } from "react-router";
+import { FcGoogle } from "react-icons/fc";
+import { useNavigate, Link, useSearchParams } from "react-router"; // Aggiunto useSearchParams
 import API from "../api/api.js";
 
 const Login = ({ onLoginSuccess }) => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams(); // 👈 Serve per catturare il token al ritorno dal backend
 
+  // EFFETTO 1: Se c'è già il token nel localStorage, vai alla mappa
   useEffect(() => {
     if (localStorage.getItem("token")) {
       navigate("/mappa");
     }
   }, [navigate]);
+
+  // EFFETTO 2: Intercetta il ritorno da Google quando il backend ti rispedisce qui con il token nell'URL
+  useEffect(() => {
+    const token = searchParams.get("token");
+    if (token) {
+      localStorage.setItem("token", token);
+
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      }
+      navigate("/mappa"); // Ti manda alla mappa di BikeStop
+    }
+  }, [searchParams, navigate, onLoginSuccess]);
 
   const { email, password } = formData;
 
@@ -39,25 +54,11 @@ const Login = ({ onLoginSuccess }) => {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      const googleToken = credentialResponse.credential;
-      console.log("Token di Google ricevuto:", googleToken);
-
-      const res = await API.post("/auth/google", {
-        token: googleToken,
-      });
-
-      localStorage.setItem("token", res.data.token);
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Errore durante il login con Google sul backend:", error);
-      alert("Accesso con Google fallito. Riprova.");
-    }
-  };
-
-  const handleGoogleError = () => {
-    console.log("Login Fallito con Google");
+  // IL VECCHIO METODO FUNZIONANTE: Punta direttamente al tuo backend su Render!
+  const handleGoogleLogin = () => {
+    // Usa la variabile d'ambiente del tuo frontend che punta a Render (es: https://bikestop-backend.onrender.com/api/v1)
+    // Se non usi le variabili d'ambiente per axios, puoi usare direttamente l'URL di Render fisso per testare
+    window.location.href = `${import.meta.env.VITE_API_URL || "https://bikestop-backend.onrender.com/api"}/auth/google`;
   };
 
   return (
@@ -65,13 +66,7 @@ const Login = ({ onLoginSuccess }) => {
       <Row className="w-100 justify-content-center">
         <Col md={6} lg={4}>
           <Card className="border-0 shadow-lg" style={{ borderRadius: "15px", overflow: "hidden" }}>
-            <div
-              style={{
-                backgroundColor: "#0d6efd",
-                height: "10px",
-                width: "100%",
-              }}
-            />
+            <div style={{ backgroundColor: "#0d6efd", height: "10px", width: "100%" }} />
             <Card.Body className="p-5">
               <div className="text-center mb-4">
                 <h2 className="fw-bold text-dark">Bentornato</h2>
@@ -130,25 +125,16 @@ const Login = ({ onLoginSuccess }) => {
                   ACCEDI <FaArrowRight size={14} />
                 </Button>
 
-                <div
-                  className="google-btn-container mt-3"
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    justifyContent: "center",
-                    borderRadius: "8px",
-                    overflow: "hidden", // Taglia gli angoli dell'iframe di Google per seguire gli 8px di raggio
-                  }}
+                {/* IL TUO NUOVO BOTTONE BOOTSTRAP REALE: Niente iframe, niente bug, largo uguale, adatta il raggio a 8px */}
+                <Button
+                  variant="light"
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  className="w-100 mt-3 py-2 fw-bold shadow-sm d-flex align-items-center justify-content-center border"
+                  style={{ borderRadius: "8px", gap: "10px", backgroundColor: "#fff", color: "#757575" }}
                 >
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                    text="signin_with"
-                    shape="square" // "square" combinato con il contenitore sopra permette di controllare i bordi tramite CSS
-                    width="340px" // 👈 Modifica questo valore in pixel (es. 340px, 360px o 100%) per farlo combaciare al millimetro con la larghezza del tasto Bootstrap sopra
-                    useOneTap={false}
-                  />
-                </div>
+                  <FcGoogle size={20} /> Continua con Google
+                </Button>
               </Form>
 
               <div className="text-center mt-4">
