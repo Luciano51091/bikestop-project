@@ -130,16 +130,8 @@ const Login = ({ onLoginSuccess }) => {
                   ACCEDI <FaArrowRight size={14} />
                 </Button>
 
-                {/* RIPRISTINATO: Pulsante originario con modifiche solo grafiche e protettive */}
                 <div className="google-btn-wrapper mt-3 shadow-sm" style={{ borderRadius: "8px", overflow: "hidden", width: "100%" }}>
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                    text="signin_with" // Ritorna la scritta standard "Accedi con Google"
-                    shape="square" // Squadrato per riempire gli angoli del wrapper
-                    width="100%" // Prende tutta la larghezza come il pulsante sopra
-                    useOneTap={false} // Evita la modale automatica invadente
-                  />
+                  <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} text="signin_with" shape="square" width="100%" useOneTap={false} />
                 </div>
               </Form>
 
