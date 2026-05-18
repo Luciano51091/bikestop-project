@@ -42,14 +42,13 @@ const Login = ({ onLoginSuccess }) => {
   };
 
   const loginConGoogleCustom = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
+    flow: "auth-code",
+    onSuccess: async (codeResponse) => {
       try {
-        // Nota: useGoogleLogin restituisce un "access_token".
-        // Se il tuo backend aspetta un ID Token (credential), questo metodo usa il flusso OAuth2 standard.
-        console.log("Risposta Google ottenuta:", tokenResponse);
+        console.log("Codice di autorizzazione Google ricevuto:", codeResponse);
 
         const res = await API.post("/auth/google", {
-          token: tokenResponse.access_token, // Passiamo l'access token al backend
+          token: codeResponse.code,
         });
 
         localStorage.setItem("token", res.data.token);
