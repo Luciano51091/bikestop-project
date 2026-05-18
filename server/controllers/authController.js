@@ -3,6 +3,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const BikeStop = require("../models/BikeStop");
 const mongoose = require("mongoose");
+const { OAuth2Client } = require("google-auth-library");
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 exports.register = async (req, res) => {
   try {
@@ -156,5 +158,53 @@ exports.toggleFavorite = async (req, res) => {
     res.json(user.favorites);
   } catch (err) {
     res.status(500).send("Errore salvataggio preferiti");
+  }
+};
+
+exports.googleLogin = async (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ msg: "Token di Google mancante" });
+  }
+
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name, picture } = payload;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = new User({
+        username: name,
+        email: email,
+        profileImage: picture,
+        role: "user",
+        isGoogleUser: true,
+      });
+
+      await user.save();
+    }
+
+    const jwtPayload = {
+      user: {
+        id: user.id,
+        role: user.role,
+      },
+    };
+
+    jwt.sign(jwtPayload, process.env.JWT_SECRET, { expiresIn: "1h" }, (err, jwtToken) => {
+      if (err) throw err;
+
+      res.json({ token: jwtToken });
+    });
+  } catch (err) {
+    console.error("Errore nel login con Google:", err.message);
+    res.status(500).send("Errore nel server durante l'autenticazione con Google");
   }
 };

@@ -24,12 +24,11 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     setIsLoggedIn(false);
-    window.location.href = "/"; // Forza il ritorno alla home
+    window.location.href = "/";
   };
 
   return (
     <Router>
-      {/* Usiamo il componente dedicato e passiamo le props */}
       <MyNavbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
 
       <Container>

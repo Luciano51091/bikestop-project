@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Form, Button, Card, Alert, Container, Row, Col, InputGroup } from "react-bootstrap";
 import { FaEnvelope, FaLock, FaArrowRight } from "react-icons/fa";
+import { GoogleLogin } from "@react-oauth/google";
 import axios from "axios";
 import { useNavigate, Link } from "react-router";
+import API from "../api/api.js";
 
 const Login = ({ onLoginSuccess }) => {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -24,7 +26,7 @@ const Login = ({ onLoginSuccess }) => {
     setError("");
 
     try {
-      const res = await axios.post("https://bikestop-backend.onrender.com/api/auth/login", formData);
+      const res = await API.post("/auth/login", formData);
       localStorage.setItem("token", res.data.token);
 
       if (onLoginSuccess) {
@@ -36,6 +38,29 @@ const Login = ({ onLoginSuccess }) => {
       setError(err.response?.data?.msg || "Credenziali non valide");
       console.error("Errore Login:", err);
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const googleToken = credentialResponse.credential;
+
+      console.log("Token di Google ricevuto:", googleToken);
+
+      const res = await API.post("/auth/google", {
+        token: googleToken,
+      });
+
+      localStorage.setItem("token", res.data.token);
+
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Errore durante il login con Google sul backend:", error);
+      alert("Accesso con Google fallito. Riprova.");
+    }
+  };
+
+  const handleGoogleError = () => {
+    console.log("Login Fallito con Google");
   };
 
   return (
@@ -108,6 +133,10 @@ const Login = ({ onLoginSuccess }) => {
                 >
                   ACCEDI <FaArrowRight size={14} />
                 </Button>
+
+                <div className="google-btn-wrapper mt-2 shadow-sm">
+                  <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} useOneTap />
+                </div>
               </Form>
 
               <div className="text-center mt-4">

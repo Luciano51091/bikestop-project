@@ -8,5 +8,6 @@ router.post("/login", authController.login);
 router.get("/me", auth, authController.getMe);
 router.put("/update", auth, authController.updateProfile);
 router.post("/favorite/:stopId", auth, authController.toggleFavorite);
+router.post("/google", authController.googleLogin);
 
 module.exports = router;

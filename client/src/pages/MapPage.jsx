@@ -9,6 +9,7 @@ import "leaflet/dist/leaflet.css";
 import RoutingControl from "../components/RoutingControl";
 import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
 import { useLocation } from "react-router";
+import API from "../api/api.js";
 
 const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dbql5hkcb/image/upload";
 const UPLOAD_PRESET = "bikestop_preset";
@@ -75,7 +76,7 @@ const MapPage = () => {
 
   const fetchStops = async () => {
     try {
-      const res = await axios.get("https://bikestop-backend.onrender.com/api/bikestops");
+      const res = await API.get("/bikestops");
       setStops(res.data);
       if (selectedStop) {
         const updated = res.data.find((s) => s._id === selectedStop._id);
@@ -176,8 +177,8 @@ const MapPage = () => {
         imageUrl = uploadRes.data.secure_url;
       }
       const finalName = formData.category === "pericolo" ? `Pericolo: ${formData.hazardType}` : formData.name;
-      await axios.post(
-        "https://bikestop-backend.onrender.com/api/bikestops",
+      await API.post(
+        "/bikestops",
         { ...formData, name: finalName, latitude: newCoords.lat, longitude: newCoords.lng, imageUrl: imageUrl },
         { headers: { "x-auth-token": token } },
       );
@@ -197,7 +198,7 @@ const MapPage = () => {
     if (!commentText.trim()) return;
     try {
       const token = localStorage.getItem("token");
-      await axios.post(`https://bikestop-backend.onrender.com/api/bikestops/${stopId}/comment`, { text: commentText }, { headers: { "x-auth-token": token } });
+      await API.post(`/bikestops/${stopId}/comment`, { text: commentText }, { headers: { "x-auth-token": token } });
       setCommentText("");
       await refreshUser();
       fetchStops();
@@ -210,7 +211,7 @@ const MapPage = () => {
     try {
       const token = localStorage.getItem("token");
       if (token) {
-        const res = await axios.get("https://bikestop-backend.onrender.com/api/auth/me", {
+        const res = await API.get("/auth/me", {
           headers: { "x-auth-token": token },
         });
         console.log("DATI UTENTE AGGIORNATI DAL SERVER:", res.data.stats);
@@ -227,11 +228,7 @@ const MapPage = () => {
       try {
         const token = localStorage.getItem("token");
 
-        const res = await axios.patch(
-          `https://bikestop-backend.onrender.com/api/bikestops/${id}/verify`,
-          { status: "broken" },
-          { headers: { "x-auth-token": token } },
-        );
+        const res = await API.patch(`/bikestops/${id}/verify`, { status: "broken" }, { headers: { "x-auth-token": token } });
 
         setShowDetails(false);
         await refreshUser();
@@ -246,11 +243,7 @@ const MapPage = () => {
 
     try {
       const token = localStorage.getItem("token");
-      await axios.patch(
-        `https://bikestop-backend.onrender.com/api/bikestops/${id}/status`,
-        { status: newStatus, hazardType: newHazardType },
-        { headers: { "x-auth-token": token } },
-      );
+      await API.patch(`/bikestops/${id}/status`, { status: newStatus, hazardType: newHazardType }, { headers: { "x-auth-token": token } });
       fetchStops();
     } catch (err) {
       alert("Errore");
@@ -260,7 +253,7 @@ const MapPage = () => {
     if (!window.confirm("Confermi che il pericolo è stato rimosso? Il punto verrà eliminato dalla mappa.")) return;
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`https://bikestop-backend.onrender.com/api/bikestops/${id}`, { headers: { "x-auth-token": token } });
+      await API.delete(`/bikestops/${id}`, { headers: { "x-auth-token": token } });
       setShowDetails(false);
       fetchStops();
       alert("Segnalazione rimossa con successo!");
@@ -290,7 +283,7 @@ const MapPage = () => {
     try {
       const token = localStorage.getItem("token");
 
-      await axios.patch(`https://bikestop-backend.onrender.com/api/bikestops/${id}/status`, { status: "guasto" }, { headers: { "x-auth-token": token } });
+      await API.patch(`/bikestops/${id}/status`, { status: "guasto" }, { headers: { "x-auth-token": token } });
       alert("Segnalazione inviata. Grazie per il contributo!");
       fetchStops();
     } catch (err) {
@@ -344,11 +337,7 @@ const MapPage = () => {
 
       const statusValue = isWorking ? "active" : "broken";
 
-      const res = await axios.patch(
-        `https://bikestop-backend.onrender.com/api/bikestops/${id}/verify`,
-        { status: statusValue },
-        { headers: { "x-auth-token": token } },
-      );
+      const res = await API.patch(`/bikestops/${id}/verify`, { status: statusValue }, { headers: { "x-auth-token": token } });
 
       setSelectedStop(res.data);
       if (typeof refreshUser === "function") {
@@ -382,7 +371,7 @@ const MapPage = () => {
       try {
         const token = localStorage.getItem("token");
         if (token) {
-          const res = await axios.get("https://bikestop-backend.onrender.com/api/auth/me", {
+          const res = await API.get("/auth/me", {
             headers: { "x-auth-token": token },
           });
           setCurrentUser(res.data);
@@ -403,8 +392,8 @@ const MapPage = () => {
       const token = localStorage.getItem("token");
       if (!token) return alert("Devi essere loggato!");
 
-      const res = await axios.post(
-        `https://bikestop-backend.onrender.com/api/auth/favorite/${stopId}`,
+      const res = await API.post(
+        `/auth/favorite/${stopId}`,
         {},
         {
           headers: { "x-auth-token": token },
@@ -447,11 +436,7 @@ const MapPage = () => {
     try {
       const token = localStorage.getItem("token");
 
-      const response = await axios.post(
-        `https://bikestop-backend.onrender.com/api/bikestops/rate/${stopId}`,
-        { rating: newRating },
-        { headers: { "x-auth-token": token } },
-      );
+      const response = await API.post(`/bikestops/rate/${stopId}`, { rating: newRating }, { headers: { "x-auth-token": token } });
 
       setSelectedStop(response.data);
 

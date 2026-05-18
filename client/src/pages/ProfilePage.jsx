@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Button, Badge, ListGroup, Spinner, Image, Mo
 import { User, MapPin, CheckCircle, MessageSquare, Edit3, LogOut, Award, Calendar, Camera, Heart } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router";
+import API from "../api/api.js";
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
@@ -24,7 +25,7 @@ const ProfilePage = () => {
         return;
       }
 
-      const resUser = await axios.get(`https://bikestop-backend.onrender.com/api/auth/me?t=${Date.now()}`, {
+      const resUser = await API.get(`/auth/me?t=${Date.now()}`, {
         headers: { "x-auth-token": token },
       });
 
@@ -34,7 +35,7 @@ const ProfilePage = () => {
       setNewUsername(resUser.data.username);
       setNewEmail(resUser.data.email);
 
-      const resStops = await axios.get("https://bikestop-backend.onrender.com/api/bikestops/user/mystops", {
+      const resStops = await API.get("/bikestops/user/mystops", {
         headers: { "x-auth-token": token },
       });
       setMyStops(resStops.data);
@@ -68,7 +69,7 @@ const ProfilePage = () => {
       const res = await axios.post("https://api.cloudinary.com/v1_1/dbql5hkcb/image/upload", formData);
       const imageUrl = res.data.secure_url;
       const token = localStorage.getItem("token");
-      await axios.put("https://bikestop-backend.onrender.com/api/auth/update", { profileImage: imageUrl }, { headers: { "x-auth-token": token } });
+      await API.put("/auth/update", { profileImage: imageUrl }, { headers: { "x-auth-token": token } });
       fetchProfileData();
       alert("Foto profilo aggiornata!");
     } catch (err) {
@@ -97,7 +98,7 @@ const ProfilePage = () => {
 
     try {
       const token = localStorage.getItem("token");
-      await axios.put("https://bikestop-backend.onrender.com/api/auth/update", updatePayload, {
+      await API.put("/auth/update", updatePayload, {
         headers: { "x-auth-token": token },
       });
 

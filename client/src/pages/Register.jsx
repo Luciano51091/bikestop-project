@@ -3,6 +3,7 @@ import { Form, Button, Card, Alert, Container, Row, Col, InputGroup } from "reac
 import { FaUser, FaEnvelope, FaLock, FaStore } from "react-icons/fa";
 import axios from "axios";
 import { useNavigate, Link } from "react-router";
+import API from "../api/api.js";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -21,7 +22,7 @@ const Register = () => {
   const onSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("https://bikestop-backend.onrender.com/api/auth/register", formData);
+      await API.post("/auth/register", formData);
       navigate("/login");
     } catch (err) {
       setError(err.response?.data?.msg || "Errore durante la registrazione");
