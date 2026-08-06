@@ -38,7 +38,7 @@ exports.createStop = async (req, res) => {
   }
 };
 
-// TUTTI I PUNTOI BIKESTOP
+// TUTTI I PUNTI BIKESTOP
 exports.getAllStops = async (req, res) => {
   try {
     const stops = await BikeStop.find({
@@ -188,11 +188,9 @@ exports.verifyStop = async (req, res) => {
         stop.ratings.notWorks = (stop.ratings.notWorks || 0) + 1;
       }
 
-      // Nuova verifica = Punto meritato
       incrementUserStats = true;
     }
 
-    // Se l'azione è valida, aggiorniamo il contatore dell'utente nel DB
     if (incrementUserStats) {
       await User.findByIdAndUpdate(userId, {
         $inc: { "stats.totalVerifications": 1 },

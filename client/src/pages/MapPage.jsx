@@ -32,19 +32,19 @@ const MapController = ({ stops, userLocation, location, setSelectedStop, setShow
     }
   }, [stops, map, location.state]);
 
-  // --- NUOVO: LOGICA DI FOCUS DAL PROFILO ---
+  // --- LOGICA DI FOCUS DAL PROFILO ---
   useEffect(() => {
     if (location.state?.focusStopId && stops.length > 0) {
       const targetStop = stops.find((s) => s._id === location.state.focusStopId);
       if (targetStop) {
-        // Centra la mappa (Usa l'ordine [lat, lng] di Leaflet)
+        // Centra la mappa sul stop
         map.flyTo([targetStop.location.coordinates[1], targetStop.location.coordinates[0]], 16, { animate: true });
 
         // Apri dettagli
         setSelectedStop(targetStop);
         setShowDetails(true);
 
-        // Pulisci lo stato per non ripetere il flyTo al refresh
+        // Pulizia dello stato per non ripetere il flyTo al refresh
         window.history.replaceState({}, document.title);
       }
     }
@@ -604,7 +604,7 @@ const MapPage = () => {
         </div>
 
         <Offcanvas.Body className="px-4 py-4">
-          {/* BADGE CATEGORIA - Ora è qui fuori, visibile SEMPRE */}
+          {/* BADGE CATEGORIA  */}
           <div className="mb-3">
             <div
               className="d-inline-block px-3 py-1 rounded-pill fw-bold text-white shadow-sm"

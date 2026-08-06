@@ -3,7 +3,7 @@ node_modules/
 client/node_modules/
 server/node_modules/
 
-# --- SEGRETI E VARIABILI (Fondamentale!) ---
+# --- SEGRETI E VARIABILI  ---
 .env
 .env.local
 .env.*.local

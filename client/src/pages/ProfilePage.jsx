@@ -103,7 +103,7 @@ const ProfilePage = () => {
       });
 
       setShowEditModal(false);
-      setNewPassword(""); // Pulisce lo stato della password per sicurezza
+      setNewPassword("");
       fetchProfileData();
       alert("Profilo aggiornato con successo!");
     } catch (err) {
@@ -111,19 +111,6 @@ const ProfilePage = () => {
       setModalError(err.response?.data?.msg || "Errore durante l'aggiornamento del profilo");
     }
   };
-
-  // const handleUpdateUsername = async (e) => {
-  //   e.preventDefault();
-  //   try {
-  //     const token = localStorage.getItem("token");
-  //     await axios.put("http://localhost:5000/api/auth/update", { username: newUsername }, { headers: { "x-auth-token": token } });
-  //     setShowEditModal(false);
-  //     fetchProfileData();
-  //     alert("Username aggiornato!");
-  //   } catch (err) {
-  //     alert("Errore durante l'aggiornamento");
-  //   }
-  // };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -145,7 +132,7 @@ const ProfilePage = () => {
         {/* COLONNA SINISTRA: CARD PROFILO */}
         <Col lg={4}>
           <Card className="border-0 shadow-sm rounded-4 overflow-hidden position-relative">
-            {/* Banner con gradiente moderno */}
+            {/* Banner */}
             <div
               style={{
                 height: "120px",

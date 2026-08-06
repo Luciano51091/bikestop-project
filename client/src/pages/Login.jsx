@@ -141,14 +141,7 @@ const Login = ({ onLoginSuccess }) => {
                     justifyContent: "center",
                   }}
                 >
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                    text="signin_with"
-                    shape="square"
-                    width="100%" // Spinge l'estensione al massimo consentito dalla card
-                    useOneTap={false}
-                  />
+                  <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} text="signin_with" shape="square" width="100%" useOneTap={false} />
                 </div>
               </Form>
 

@@ -63,13 +63,13 @@ exports.getMe = async (req, res) => {
       totalComments += stop.comments.filter((c) => c.user && c.user.toString() === userId.toString()).length;
     });
 
-    // !!! CORREZIONE: Convertiamo l'id in ObjectId per garantire che MongoDB trovi la corrispondenza nell'array
+    //  Conversione id in ObjectId per garantire che MongoDB trovi la corrispondenza nell'array
     let convertedId = userId;
     if (mongoose.Types.ObjectId.isValid(userId)) {
       convertedId = new mongoose.Types.ObjectId(userId);
     }
 
-    // Cerchiamo i documenti dove l'array 'verifiedBy' contiene il nostro ID (stringa o ObjectId)
+    // Ricerca i documenti dove l'array 'verifiedBy' contiene il nostro ID (stringa o ObjectId)
     const totalVerifications = await BikeStop.countDocuments({
       $or: [{ verifiedBy: userId }, { verifiedBy: convertedId }],
     });
@@ -81,7 +81,7 @@ exports.getMe = async (req, res) => {
       stats: {
         stopsCreated,
         totalComments,
-        totalVerifications, // Ora questo manderà il numero reale!
+        totalVerifications,
       },
     });
   } catch (err) {

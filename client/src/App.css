@@ -9,7 +9,7 @@
   background: #1a1a1a;
   background-image:
     linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(44, 62, 80, 0.8) 100%),
-    url("https://images.unsplash.com/photo-1471506480208-8a93a6863481?q=80&w=2070&auto=format&fit=crop"); /* Immagine a tema bici */
+    url("https://images.unsplash.com/photo-1471506480208-8a93a6863481?q=80&w=2070&auto=format&fit=crop");
   background-size: cover;
   background-position: center;
   border-radius: 40px 40px;
@@ -64,7 +64,7 @@
   border-radius: 20px;
 }
 
-/* Colori chiari per i box icone */
+/* box icone */
 .bg-primary-light {
   background-color: rgba(13, 110, 253, 0.1);
 }
@@ -75,7 +75,6 @@
   background-color: rgba(255, 193, 7, 0.1);
 }
 
-/* Spaziature strette per titoli grandi */
 .tracking-tight {
   letter-spacing: -2px;
 }
@@ -87,10 +86,9 @@
 
 .stat-item h2 {
   letter-spacing: -1px;
-  font-variant-numeric: tabular-nums; /* Mantiene i numeri allineati se dovessero animarsi */
+  font-variant-numeric: tabular-nums;
 }
 
-/* Effetto per far risaltare i numeri */
 .text-primary-gradient {
   background: linear-gradient(90deg, #2ecc71, #27ae60);
   background-clip: text;
@@ -99,10 +97,10 @@
   display: inline-block;
 }
 
-/* Ottimizzazione Mobile: su schermi piccoli riduciamo leggermente la dimensione */
+/* Ottimizzazione Mobile */
 @media (max-width: 576px) {
   .stat-item h2 {
-    font-size: 2rem; /* Più leggibile su smartphone */
+    font-size: 2rem;
   }
   .stat-item p {
     font-size: 0.65rem;

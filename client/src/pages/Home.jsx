@@ -34,7 +34,7 @@ const Home = () => {
             </Col>
           </Row>
         </Container>
-        {/* Elemento decorativo di sfondo opzionale */}
+        {/* Elemento decorativo di sfondo della sezione */}
         <div className="hero-overlay"></div>
       </div>
 
@@ -115,7 +115,6 @@ const Home = () => {
       {/* FINAL CALL TO ACTION */}
       <Container className="py-5 my-5">
         <div className="bg-dark text-white p-5 rounded-5 shadow-lg text-center position-relative overflow-hidden">
-          {/* Un tocco di design: un cerchio sfumato sullo sfondo */}
           <div
             className="position-absolute top-0 start-0 w-100 h-100"
             style={{
@@ -134,7 +133,7 @@ const Home = () => {
         </div>
       </Container>
 
-      {/* FOOTER MINIMALE */}
+      {/* FOOTER SECTION */}
       <footer className="bg-white border-top py-4">
         <Container>
           <Row className="align-items-center">
