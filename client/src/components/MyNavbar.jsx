@@ -1,8 +1,13 @@
 import React from "react";
+// Importiamo i componenti di layout da React-Bootstrap per la Navbar responsive
 import { Container, Navbar, Nav, Button } from "react-bootstrap";
+// Importiamo Link e NavLink da React Router per la navigazione senza ricaricare la pagina
 import { Link, NavLink } from "react-router";
+// Importiamo le icone grafiche da Lucide React
 import { User, Map, LogOut, UserPlus, LogIn } from "lucide-react";
 
+// COMPONENTE LOCALE: BikeStopLogo
+// È un piccolissimo componente funzionale che disegna l'icona del logo usando un codice vettoriale SVG.
 const BikeStopLogo = () => (
   <div className="d-flex align-items-center justify-content-center bg-success shadow-sm me-2" style={{ width: "38px", height: "36px", borderRadius: "10px" }}>
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -15,8 +20,12 @@ const BikeStopLogo = () => (
   </div>
 );
 
+// COMPONENTE PRINCIPALE: MyNavbar
+// Riceve due PROPS destrutturate da App.jsx:
 const MyNavbar = ({ isLoggedIn, handleLogout }) => {
   return (
+    // <Navbar> è il contenitore principale.
+    // expand="lg" menu hamburger su schermi piccoli
     <Navbar
       expand="lg"
       className="py-3 sticky-top shadow-sm"
@@ -27,6 +36,8 @@ const MyNavbar = ({ isLoggedIn, handleLogout }) => {
       }}
     >
       <Container>
+        {/* BRAND: Cliccando sul logo si torna alla Home ('/') */}
+        {/* as={Link} dice a React-Bootstrap di comportarsi come un Link di React Router */}
         <Navbar.Brand as={Link} to="/" className="d-flex align-items-center fw-bold text-dark fs-4">
           <BikeStopLogo />
           <span style={{ letterSpacing: "-1px", color: "#1a1a1a" }}>
@@ -34,10 +45,14 @@ const MyNavbar = ({ isLoggedIn, handleLogout }) => {
           </span>
         </Navbar.Brand>
 
+        {/* Pulsante Hamburger per dispositivi mobili */}
         <Navbar.Toggle aria-controls="basic-navbar-nav" className="border-0 shadow-none" />
 
+        {/* Menu comprimibile */}
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="ms-auto align-items-center gap-2">
+            {/* LINK MAPPA: Sempre visibile sia per utenti ospiti che autenticati */}
+            {/* NavLink permette di rilevare se la rotta è attiva tramite la funzione ({ isActive }) */}
             <Nav.Link
               as={NavLink}
               to="/mappa"
@@ -46,13 +61,15 @@ const MyNavbar = ({ isLoggedIn, handleLogout }) => {
               <Map size={18} className="me-2" /> Mappa
             </Nav.Link>
 
+            {/* OPERATORE TERNARIO: RENDERING CONDIZIONALE */}
+            {/* !isLoggedIn ? (Mostra pulsanti per ospiti) : (Mostra pulsanti per utenti loggati) */}
             {!isLoggedIn ? (
               <>
                 <Nav.Link as={Link} to="/login" className="text-secondary fw-medium px-3">
                   <LogIn size={18} className="me-2" /> Accedi
                 </Nav.Link>
                 <Button as={Link} to="/register" variant="success" className="rounded-pill px-4 fw-bold shadow-sm ms-2" style={{ fontSize: "0.9rem" }}>
-                  <UserPlus size={18} className="me-2" /> Registrati
+                  <UserPlus size={18} className="me-2 mb-1" /> Registrati
                 </Button>
               </>
             ) : (
