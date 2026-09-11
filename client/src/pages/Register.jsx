@@ -5,26 +5,36 @@ import axios from "axios";
 import { useNavigate, Link } from "react-router";
 import API from "../api/api.js";
 
+// COMPONENTE REGISTER: Gestisce la registrazione di un nuovo utente nel database di BikeStop
 const Register = () => {
+  // STATO PER I DATI DEL FORM: Oggetto con tutti i campi necessari per creare un account.
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
     role: "user",
   });
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
 
+  // STATO PER ERRORE: Memorizza i messaggi d'errore inviati dal server (es. "Email già in uso")
+  const [error, setError] = useState("");
+  const navigate = useNavigate(); // HOOK DI NAVIGAZIONE
+
+  // DESTRUCTURING: Estrazione delle proprietà dallo stato per semplificare il binding negli input
   const { username, email, password, role } = formData;
 
   const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  // INVIO FORM DI REGISTRAZIONE
   const onSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+
     try {
+      // Chiamata HTTP POST al backend inviando l'intero oggetto formData
       await API.post("/auth/register", formData);
       navigate("/login");
     } catch (err) {
+      // Cattura il messaggio restituito dal server o ne imposta uno generico di fallback
       setError(err.response?.data?.msg || "Errore durante la registrazione");
     }
   };
@@ -34,6 +44,7 @@ const Register = () => {
       <Row className="w-100 justify-content-center">
         <Col md={8} lg={5}>
           <Card className="border-0 shadow-lg" style={{ borderRadius: "15px", overflow: "hidden" }}>
+            {/* Striscia verde decorativa superiore */}
             <div
               style={{
                 backgroundColor: "#198754",
@@ -47,13 +58,16 @@ const Register = () => {
                 <p className="text-muted">Unisciti alla community di ciclisti</p>
               </div>
 
+              {/* BOX ERRORE: Appare solo se lo stato 'error' contiene del testo */}
               {error && (
                 <Alert variant="danger" className="py-2 text-center" style={{ fontSize: "0.9rem" }}>
                   {error}
                 </Alert>
               )}
 
+              {/* FORM DI REGISTRAZIONE */}
               <Form onSubmit={onSubmit}>
+                {/* CAMPO USERNAME */}
                 <Form.Group className="mb-3">
                   <Form.Label className="small fw-semibold text-muted">Nome Utente</Form.Label>
                   <InputGroup>
@@ -72,6 +86,7 @@ const Register = () => {
                   </InputGroup>
                 </Form.Group>
 
+                {/* CAMPO EMAIL */}
                 <Form.Group className="mb-3">
                   <Form.Label className="small fw-semibold text-muted">Email</Form.Label>
                   <InputGroup>
@@ -90,6 +105,7 @@ const Register = () => {
                   </InputGroup>
                 </Form.Group>
 
+                {/* CAMPO PASSWORD */}
                 <Form.Group className="mb-3">
                   <Form.Label className="small fw-semibold text-muted">Password</Form.Label>
                   <InputGroup>
@@ -108,6 +124,7 @@ const Register = () => {
                   </InputGroup>
                 </Form.Group>
 
+                {/* SELEZIONE RUOLO: Permette di distinguere ciclisti privati ed esercenti */}
                 <Form.Group className="mb-4">
                   <Form.Label className="small fw-semibold text-muted">Tipo di account</Form.Label>
                   <InputGroup>
@@ -121,11 +138,13 @@ const Register = () => {
                   </InputGroup>
                 </Form.Group>
 
+                {/* PULSANTE SUBMIT VERDE */}
                 <Button variant="success" type="submit" className="w-100 py-2 fw-bold shadow-sm" style={{ borderRadius: "8px", letterSpacing: "0.5px" }}>
                   REGISTRATI ORA
                 </Button>
               </Form>
 
+              {/* LINK AL LOGIN */}
               <div className="text-center mt-4">
                 <p className="small text-muted">
                   Hai già un account?{" "}

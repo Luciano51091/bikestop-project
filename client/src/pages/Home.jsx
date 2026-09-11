@@ -3,8 +3,12 @@ import { Container, Row, Col, Button, Card } from "react-bootstrap";
 import { useNavigate } from "react-router";
 import { Map, Share2, ShieldCheck, ChevronRight } from "lucide-react";
 
+// COMPONENTE HOME: È la Landing Page di BikeStop.
+// Ha lo scopo di presentare l'app, mostrare i vantaggi chiave, le statistiche della community e guidare l'utente verso la Mappa o la Registrazione.
+
 const Home = () => {
   const navigate = useNavigate();
+  // HOOK DI NAVIGAZIONE: useNavigate ci permette di cambiare pagina tramite codice JavaScript
 
   return (
     <div className="home-page">
@@ -13,9 +17,11 @@ const Home = () => {
         <Container className="position-relative" style={{ zIndex: 2 }}>
           <Row className="justify-content-center">
             <Col lg={8} className="text-center">
+              {/* Badge decorativo per dare un tocco moderno */}
               <span className="badge rounded-pill bg-success mb-3 px-3 py-2 text-uppercase fw-bold" style={{ letterSpacing: "1px", fontSize: "0.75rem" }}>
                 🚴 Community Edition 2026
               </span>
+              {/* Titolo Principale */}
               <h1 className="display-2 fw-bold mb-3 tracking-tight">
                 Pedala. Trova. <span className="text-primary-gradient">Condividi.</span>
               </h1>

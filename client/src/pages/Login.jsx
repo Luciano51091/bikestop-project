@@ -5,49 +5,61 @@ import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate, Link } from "react-router";
 import API from "../api/api.js";
 
+// COMPONENTE LOGIN: Riceve la prop 'onLoginSuccess' per aggiornare lo stato di autenticazione globale dell'app
 const Login = ({ onLoginSuccess }) => {
+  // STATO PER I DATI DEL FORM: Oggetto contenente email e password digitati dall'utente
   const [formData, setFormData] = useState({ email: "", password: "" });
+  // STATO PER GLI ERRORI: Memorizza i messaggi di errore restituiti dal backend (es. "Credenziali non valide")
   const [error, setError] = useState("");
+  // HOOK PER IL REINDIRIZZAMENTO: Permette di cambiare rotta via codice
   const navigate = useNavigate();
 
+  // CONTROLLO SESSIONE ESISTENTE: Eseguito al primo rendering del componente
   useEffect(() => {
     if (localStorage.getItem("token")) {
       navigate("/mappa");
     }
   }, [navigate]);
 
+  // DESTRUCTURING: Estrae email e password dallo stato per usarle nei campi del form
   const { email, password } = formData;
-
+  // GESTORE CAMBIAMENTO INPUT: Aggiorna lo stato in modo dinamico usando il "name" dell'input
   const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  // INVIO FORM CLASSICO (Email + Password)
   const onSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Previene il ricaricamento automatico della pagina
     setError("");
 
     try {
-      const res = await API.post("/auth/login", formData);
-      localStorage.setItem("token", res.data.token);
+      const res = await API.post("/auth/login", formData); // Invia la richiesta HTTP POST al backend con i dati inseriti
+      localStorage.setItem("token", res.data.token); // Salvataggio del Token JWT nel LocalStorage del browser
 
+      // Notifica il componente padre (App.jsx) dell'avvenuto login per aggiornare la Navbar
       if (onLoginSuccess) {
         onLoginSuccess();
       }
 
       navigate("/mappa");
     } catch (err) {
+      // Gestione errore: mostra il messaggio inviato dal backend o un testo di fallback
       setError(err.response?.data?.msg || "Credenziali non valide");
       console.error("Errore Login:", err);
     }
   };
 
+  // GESTORE LOGIN GOOGLE (Successo)
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      const googleToken = credentialResponse.credential;
+      const googleToken = credentialResponse.credential; // Token restituito dal popup/widget di Google
       console.log("Token di Google ricevuto:", googleToken);
 
+      // Invia il token di Google al nostro backend per la verifica ed eventuale registrazione/login
       const res = await API.post("/auth/google", {
         token: googleToken,
       });
 
+      // Salva il token restituito dal nostro server e ricarica la pagina principale
       localStorage.setItem("token", res.data.token);
       window.location.href = "/";
     } catch (error) {
@@ -56,15 +68,18 @@ const Login = ({ onLoginSuccess }) => {
     }
   };
 
+  // GESTORE LOGIN GOOGLE (Errore)
   const handleGoogleError = () => {
     console.log("Login Fallito con Google");
   };
 
   return (
+    // CONTAINER CENTRATO: Centra la scheda di login sia verticalmente (minHeight: 85vh) che orizzontalmente
     <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: "85vh" }}>
       <Row className="w-100 justify-content-center">
         <Col md={6} lg={4}>
           <Card className="border-0 shadow-lg" style={{ borderRadius: "15px", overflow: "hidden" }}>
+            {/* Striscia blu decorativa superiore */}
             <div
               style={{
                 backgroundColor: "#0d6efd",
@@ -78,12 +93,14 @@ const Login = ({ onLoginSuccess }) => {
                 <p className="text-muted small">Accedi per gestire i tuoi percorsi</p>
               </div>
 
+              {/* FEEDBACK ERRORE: Mostra il box Alert di Bootstrap solo se lo stato 'error' contiene del testo */}
               {error && (
                 <Alert variant="danger" className="py-2 text-center small">
                   {error}
                 </Alert>
               )}
 
+              {/* FORM DI AUTENTICAZIONE */}
               <Form onSubmit={onSubmit}>
                 <Form.Group className="mb-3">
                   <Form.Label className="small fw-semibold text-muted">Email</Form.Label>
@@ -103,6 +120,7 @@ const Login = ({ onLoginSuccess }) => {
                   </InputGroup>
                 </Form.Group>
 
+                {/* CAMPO PASSWORD */}
                 <Form.Group className="mb-4">
                   <Form.Label className="small fw-semibold text-muted">Password</Form.Label>
                   <InputGroup>
@@ -121,6 +139,7 @@ const Login = ({ onLoginSuccess }) => {
                   </InputGroup>
                 </Form.Group>
 
+                {/* PULSANTE SUBMIT CLASSICO */}
                 <Button
                   variant="primary"
                   type="submit"
@@ -130,6 +149,7 @@ const Login = ({ onLoginSuccess }) => {
                   ACCEDI <FaArrowRight size={14} />
                 </Button>
 
+                {/* PULSANTE GOOGLE OAUTH */}
                 {/* Contenitore ottimizzato per la larghezza al 100% */}
                 <div
                   className="google-btn-wrapper mt-3 shadow-sm"
@@ -145,6 +165,7 @@ const Login = ({ onLoginSuccess }) => {
                 </div>
               </Form>
 
+              {/* LINK ALLA REGISTRAZIONE */}
               <div className="text-center mt-4">
                 <p className="small text-muted">
                   Non hai ancora un account?{" "}
